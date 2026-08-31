@@ -64,10 +64,14 @@ function renderWelcome() {
 function renderSection(index) {
   const section = prototypeSections[index];
   const questions = section.questions.map((question) => {
+    const isMulti = question.type === "multi";
+    const selectedValues = Array.isArray(state.answers[question.id]) ? state.answers[question.id] : [];
     const options = question.options.map((option, optionIndex) => {
       const value = String(optionIndex + 1);
-      const checked = state.answers[question.id] === value ? "checked" : "";
-      return `<label class="option"><input type="radio" name="${question.id}" value="${value}" ${checked} /><span>${escapeHtml(option)}</span></label>`;
+      const checked = (isMulti ? selectedValues.includes(value) : state.answers[question.id] === value) ? "checked" : "";
+      const inputType = isMulti ? "checkbox" : "radio";
+      const maxAttribute = isMulti ? `data-max-selections="${question.maxSelections ?? ""}"` : "";
+      return `<label class="option"><input type="${inputType}" name="${question.id}" value="${value}" ${maxAttribute} ${checked} /><span>${escapeHtml(option)}</span></label>`;
     }).join("");
     return `<fieldset class="question"><legend>${escapeHtml(question.label)} <span class="required" aria-label="required">*</span></legend>${question.hint ? `<p class="question-hint">${escapeHtml(question.hint)}</p>` : ""}<div class="options">${options}</div></fieldset>`;
   }).join("");
@@ -122,9 +126,30 @@ function persist() {
 }
 
 app.addEventListener("change", (event) => {
-  const input = event.target.closest("input[type='radio']");
+  const input = event.target.closest("input[type='radio'], input[type='checkbox']");
   if (!input) return;
-  state.answers[input.name] = input.value;
+  const errorElement = app.querySelector(".error");
+  if (errorElement) errorElement.textContent = "";
+
+  if (input.type === "checkbox") {
+    const current = Array.isArray(state.answers[input.name]) ? [...state.answers[input.name]] : [];
+    const maxSelections = Number(input.dataset.maxSelections || Infinity);
+    if (input.checked && !current.includes(input.value)) {
+      if (current.length >= maxSelections) {
+        input.checked = false;
+        if (errorElement) errorElement.textContent = `Please choose no more than ${maxSelections} options for this question.`;
+        input.focus();
+        return;
+      }
+      current.push(input.value);
+    } else if (!input.checked) {
+      const valueIndex = current.indexOf(input.value);
+      if (valueIndex >= 0) current.splice(valueIndex, 1);
+    }
+    state.answers[input.name] = current;
+  } else {
+    state.answers[input.name] = input.value;
+  }
   persist();
 });
 
@@ -148,7 +173,13 @@ app.addEventListener("click", (event) => {
 app.addEventListener("submit", (event) => {
   event.preventDefault();
   const index = Number(state.screen);
-  const missing = prototypeSections[index].questions.find((question) => !state.answers[question.id]);
+  const missing = prototypeSections[index].questions.find((question) => {
+    const answer = state.answers[question.id];
+    if (question.type === "multi") {
+      return !Array.isArray(answer) || answer.length < (question.minSelections ?? 1);
+    }
+    return !answer;
+  });
   if (missing) {
     state.error = "Please answer each prototype question before continuing.";
     const field = event.target.querySelector(`[name="${missing.id}"]`);

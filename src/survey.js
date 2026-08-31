@@ -29,7 +29,11 @@ export const prototypeSections = [
     questions: [
       {
         id: "prototype_creator_role",
+        type: "multi",
+        minSelections: 1,
+        maxSelections: 3,
         label: "Prototype question: Where has watch content been most useful to you?",
+        hint: "Select all that apply, up to three.",
         options: ["Discovering a watch or brand", "Seeing how a watch wears", "Understanding specifications", "Validating a brand or seller", "Comparing options"]
       }
     ]
@@ -91,4 +95,3 @@ export function progressPercent(screen, sectionCount = prototypeSections.length)
   const index = Number(screen);
   return Math.max(0, Math.min(100, Math.round(((index + 1) / sectionCount) * 100)));
 }
-
