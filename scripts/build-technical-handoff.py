@@ -202,7 +202,8 @@ add_bullets(doc, [
     "One question per screen, routed progress, Back navigation, and device-local autosave.",
     "Anonymous Supabase authentication; respondents never create or manage an account.",
     "Partial-response autosave, completion timestamps, referral attribution, and test-mode separation.",
-    "Optional follow-up email stored only after completion and separately from research answers.",
+    "Optional future-survey invitation email stored only after completion and separately from research answers.",
+    "Test Mode cannot submit contact information.",
 ])
 
 add_heading(doc, "2. Live configuration")
@@ -228,6 +229,7 @@ add_bullets(doc, [
 add_heading(doc, "contact_optins", 2)
 add_bullets(doc, [
     "Fields: id, email, receive_report, future_research, and consented_at.",
+    "The V4 client writes future_research=true and receive_report=false; receive_report remains only for database compatibility.",
     "No survey-response identifier or owner_id is written to the contact record.",
     "Respondents can insert consent but cannot read, list, update, or delete contact records.",
 ])
@@ -271,13 +273,15 @@ add_bullets(doc, [
     "Every conditional route and SKIPPED serialization.",
     "Exclusive multi-select choices and three-option limits.",
     "Progress calculation on a heavily routed path.",
+    "Single clean instruction rendering and approved transition wording.",
+    "Future-surveys-only consent and Test Mode contact-entry prevention.",
     "Live anonymous sign-in, partial insert, owner-only read, and completed-status update.",
 ])
 
 add_heading(doc, "8. Privacy and operating controls")
 add_bullets(doc, [
     "No name or TikTok handle is requested in the research instrument.",
-    "Optional email is never placed inside answers JSONB.",
+    "Optional email is used only for future survey invitations and is never placed inside answers JSONB.",
     "The public client cannot read another owner’s response.",
     "Test and production responses are separated by is_test and by browser-storage scope.",
     "Deletion requests route to watchtoksurvey@gmail.com.",

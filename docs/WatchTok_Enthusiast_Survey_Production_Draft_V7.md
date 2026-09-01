@@ -25,7 +25,7 @@ Your complete response will help us understand how WatchTok enthusiasts and coll
 This research is completely independent of watch brands. No brand has sponsored, commissioned, reviewed, or approved the survey. Watch-industry employees may participate as individual enthusiasts.
 
 
-The research questionnaire does not ask for your name, TikTok handle, or email address. Responses will be analyzed in aggregate. After completing the survey, you may separately choose to provide an email address to receive the report or hear about a future WatchTok survey.
+The research questionnaire does not ask for your name, TikTok handle, or email address. Responses will be analyzed in aggregate. After completing the survey, you may separately choose to provide an email address to be invited to future WatchTok surveys.
 
 
 Please answer for yourself. Some questions ask for one answer, some allow every answer that applies, and a few ask you to choose up to three. Your best reasonable estimate is perfectly fine.
@@ -927,13 +927,15 @@ Your answers will help build a clearer picture of how WatchTok enthusiasts disco
 ### Optional follow-up
 
 
-Would you like to receive the published report or be invited to a future WatchTok survey?
+If you would like to be invited to future WatchTok surveys, you may provide an email address.
 
 
 Providing an email address is completely optional. It will be stored separately from your research answers and will not be shared with brands or participating creators.
 
 
 **Email address:** ______________________________________
+
+**Consent:** Invite me to future WatchTok surveys.
 
 
 ---
@@ -999,7 +1001,7 @@ These notes are for the organizer and survey developer. They are not participant
 
 - Do not collect a respondent’s name or TikTok handle in the research questionnaire.
 - Place optional email collection after the completed-response event and store it separately from research answers.
-- Use optional email only to distribute findings or invite participation in future WatchTok research.
+- Use optional email only to invite participation in future WatchTok surveys.
 - Do not sell or disclose individual responses, email addresses, or individual creator referral performance.
 - No watch brand may sponsor, commission, review, approve, or alter the survey instrument or its findings.
 - Brand employees and owners may answer as individual enthusiasts. Stable Q20 identifies relevant industry relationships so analysis can be checked with and without industry-affiliated respondents.

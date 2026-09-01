@@ -169,6 +169,7 @@ h2 { font-size: clamp(1.75rem, 4vw, 2.7rem); letter-spacing: -.035em; }
 .consent-option { display: grid; grid-template-columns: 22px 1fr; gap: 10px; margin-top: 14px; align-items: start; }
 .consent-option input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--gold-dark); }
 .contact-status { color: var(--success); font-weight: 750; }
+.test-contact-notice { margin-top: 28px; padding: 16px 18px; border: 1px solid #e1ba67; border-radius: 10px; color: #5f430f; background: #fff1c9; }
 
 footer { color: #bfc7d1; text-align: center; font-size: .76rem; padding-bottom: 8px; }
 

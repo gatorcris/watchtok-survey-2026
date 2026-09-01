@@ -7,6 +7,8 @@ import {
   normalizeReferral,
   previousQuestionId,
   progressPercent,
+  questionHint,
+  questionInstruction,
   sections,
   serializedAnswers,
   surveyQuestions,
@@ -169,6 +171,8 @@ function renderQuestion() {
     return renderQuestion();
   }
   const isMulti = question.type === "multi";
+  const hint = questionHint(question);
+  const instruction = questionInstruction(question);
   const selected = Array.isArray(state.answers[question.id]) ? state.answers[question.id] : [];
   const options = question.options.map((option) => {
     const checked = isMulti ? selected.includes(option.code) : state.answers[question.id] === option.code;
@@ -191,8 +195,8 @@ function renderQuestion() {
         <fieldset class="question">
           <legend><span class="display-number">${question.display}.</span> ${escapeHtml(question.label)} <span class="required" aria-label="required">*</span></legend>
           ${question.statement ? `<blockquote>${escapeHtml(question.statement)}</blockquote>` : ""}
-          ${question.hint ? `<p class="question-hint">${escapeHtml(question.hint)}</p>` : ""}
-          <p class="instruction">${isMulti ? (question.maxSelections ? "Select up to three." : "Select all that apply.") : "Select one."}</p>
+          ${hint ? `<p class="question-hint">${escapeHtml(hint)}</p>` : ""}
+          <p class="instruction">${escapeHtml(instruction)}</p>
           <div class="options">${options}</div>
         </fieldset>
         <p class="error" role="alert">${escapeHtml(state.error)}</p>
@@ -228,6 +232,24 @@ function renderTransition() {
 }
 
 function renderComplete() {
+  const contactMarkup = isTest
+    ? `<div class="test-contact-notice" role="status">
+        <strong>Test Mode:</strong> Optional email collection is disabled. No contact information can be saved from this test response.
+      </div>`
+    : `<form class="contact-form" data-contact-form novalidate>
+        <h2>Optional follow-up</h2>
+        <p>If you would like to be invited to future WatchTok surveys, you may provide an email address. Your email will not be shared with brands or participating creators.</p>
+        <label class="email-label">Email address
+          <input type="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com">
+        </label>
+        <label class="consent-option"><input type="checkbox" name="future_research" value="true"> <span>Invite me to future WatchTok surveys.</span></label>
+        <p class="error" role="alert">${escapeHtml(state.error)}</p>
+        <p class="contact-status" role="status">${escapeHtml(state.contactStatus)}</p>
+        <div class="actions">
+          <span></span>
+          <button class="button button-primary" type="submit">Save my preference</button>
+        </div>
+      </form>`;
   app.innerHTML = `
     ${testBanner()}
     <article class="survey-card">
@@ -237,22 +259,8 @@ function renderComplete() {
         <p class="eyebrow">Survey complete</p>
         <h1>You finished the whole thing. Seriously—thank you.</h1>
         <p class="lede">A complete response is far more valuable than a click, view, or partial answer. You have helped build a clearer picture of how WatchTok enthusiasts discover, evaluate, purchase, and enjoy watches.</p>
-        <div class="notice"><strong>Your research response is complete.</strong> The optional email form below is stored separately from your survey answers.</div>
-        <form class="contact-form" data-contact-form novalidate>
-          <h2>Optional follow-up</h2>
-          <p>Would you like to receive the published report or be invited to a future WatchTok survey? Your email will not be shared with brands or participating creators.</p>
-          <label class="email-label">Email address
-            <input type="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com">
-          </label>
-          <label class="consent-option"><input type="checkbox" name="receive_report" value="true"> <span>Send me the published report.</span></label>
-          <label class="consent-option"><input type="checkbox" name="future_research" value="true"> <span>Invite me to future WatchTok research.</span></label>
-          <p class="error" role="alert">${escapeHtml(state.error)}</p>
-          <p class="contact-status" role="status">${escapeHtml(state.contactStatus)}</p>
-          <div class="actions">
-            <span></span>
-            <button class="button button-primary" type="submit">Save my preferences</button>
-          </div>
-        </form>
+        <div class="notice"><strong>Your research response is complete.</strong> Any optional contact information is stored separately from your survey answers.</div>
+        ${contactMarkup}
       </section>
     </article>`;
 }
@@ -333,19 +341,22 @@ app.addEventListener("click", (event) => {
 app.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (event.target.matches("[data-contact-form]")) {
+    if (isTest) {
+      state.error = "Test Mode does not save contact information.";
+      return renderComplete();
+    }
     const form = new FormData(event.target);
     const email = String(form.get("email") || "").trim().toLowerCase();
-    const receiveReport = form.get("receive_report") === "true";
     const futureResearch = form.get("future_research") === "true";
     state.error = "";
     if (!/^\S+@\S+\.\S+$/.test(email)) state.error = "Please enter a valid email address.";
-    else if (!receiveReport && !futureResearch) state.error = "Please choose at least one follow-up option.";
+    else if (!futureResearch) state.error = "Please confirm that you would like to be invited to future surveys.";
     if (state.error) return renderComplete();
     try {
       await submitContactOptIn(authSession, {
         email,
-        receive_report: receiveReport,
-        future_research: futureResearch,
+        receive_report: false,
+        future_research: true,
         consented_at: new Date().toISOString()
       });
       state.contactStatus = "Your preferences have been saved. Thank you.";

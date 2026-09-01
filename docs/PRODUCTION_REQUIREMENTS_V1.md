@@ -69,7 +69,7 @@ The production system should separate these concerns:
 
 - Separate record and storage policy from research answers
 - Email address
-- Consent purpose: published report and/or future WatchTok research invitation
+- Consent purpose: future WatchTok survey invitations
 - Consent timestamp and privacy-language version
 - No sharing with brands or Founding Creator Partners
 
@@ -144,4 +144,3 @@ Before public launch:
 - Creator roster and allow-listed referral codes.
 - Custom domain decision.
 - Public-summary versus commercial-report packaging.
-

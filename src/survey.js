@@ -5,12 +5,23 @@ export const SKIPPED = "SKIPPED";
 export const COMPLETED_STATUS = "completed";
 
 export const sections = [
-  { number: 1, title: "Collecting and purchasing", transition: "You’ve completed the collecting and purchasing questions. Next, let’s focus on the particular next watch you currently expect." },
+  { number: 1, title: "Collecting and purchasing", transition: "You’ve completed the collecting and purchasing questions. Next, let’s focus on the next watch you may want to buy." },
   { number: 2, title: "Your next watch purchase", transition: "You’ve completed the collecting and next-purchase questions. Now let’s look at how watches move from first discovery to a buying decision." },
   { number: 3, title: "TikTok and the path to purchase", transition: "You’re past the halfway point—and still running accurately. Next, we’re looking at your openness to smaller brands and unfamiliar watches." },
   { number: 4, title: "Small brands and collector mindset", transition: "Final stretch. These questions help us understand the people behind WatchTok—not just who posts, but who watches, comments, advises, connects, and participates." },
   { number: 5, title: "Your WatchTok role and community", transition: "" }
 ];
+
+export function questionInstruction(question) {
+  if (question.type !== "multi") return "Select one.";
+  return question.maxSelections ? "Select up to three." : "Select all that apply.";
+}
+
+export function questionHint(question) {
+  const instruction = questionInstruction(question);
+  const hint = String(question.hint || "").trim().replace(/^\*+|\*+$/g, "").trim();
+  return hint.toLowerCase() === instruction.toLowerCase() ? "" : hint;
+}
 
 export function getQuestion(id) {
   return surveyQuestions.find((question) => question.id === id);

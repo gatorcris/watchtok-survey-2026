@@ -6,6 +6,9 @@ import {
   nextQuestionId,
   normalizeReferral,
   progressPercent,
+  questionHint,
+  questionInstruction,
+  sections,
   serializedAnswers,
   surveyQuestions,
   updateMultiAnswer,
@@ -14,6 +17,21 @@ import {
 
 test("the database completion status uses the V8 schema value", () => {
   assert.equal(COMPLETED_STATUS, "completed");
+});
+
+test("the first section transition uses the approved purchase wording", () => {
+  assert.equal(
+    sections[0].transition,
+    "You’ve completed the collecting and purchasing questions. Next, let’s focus on the next watch you may want to buy."
+  );
+});
+
+test("question instructions render once without visible Markdown markers", () => {
+  assert.equal(questionInstruction({ type: "single" }), "Select one.");
+  assert.equal(questionHint({ type: "single", hint: "*Select one.*" }), "");
+  assert.equal(questionInstruction({ type: "multi", maxSelections: 3 }), "Select up to three.");
+  assert.equal(questionHint({ type: "multi", maxSelections: 3, hint: "*Select up to three.*" }), "");
+  assert.equal(questionHint({ type: "single", hint: "*A useful clarification.*" }), "A useful clarification.");
 });
 
 test("the frozen V7 instrument contains 43 questions in display order", () => {

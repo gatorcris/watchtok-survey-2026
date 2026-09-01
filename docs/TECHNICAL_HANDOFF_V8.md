@@ -16,7 +16,8 @@
 - Referral capture from ?ref=code, normalized before storage.
 - A visible ?test=1 mode that stores responses with is_test=true.
 - Separate local progress and anonymous-authentication storage for production and test mode.
-- Optional email consent after research completion, written to contact_optins separately.
+- Optional consent for future survey invitations after research completion, written to contact_optins separately.
+- Test Mode displays completion but does not permit contact-information submission.
 
 ## Live configuration
 
@@ -53,6 +54,8 @@ contact_optins contains:
 - future_research boolean
 - consented_at timestamptz
 
+The V4 client collects consent only for future survey invitations. It writes future_research=true and receive_report=false; the receive_report column remains only for database compatibility.
+
 The existing RLS policies restrict research rows to their anonymous owner, permit updates only while a response remains partial, allow authenticated contact insertion, and expose neither individual responses nor contact records to other respondents.
 
 ## Database permission migration
@@ -67,7 +70,7 @@ Run supabase/002_authenticated_client_grants.sql once in the Supabase SQL Editor
 4. Each answer is saved immediately on the device and debounced to Supabase.
 5. Routing writes hidden questions as SKIPPED; Q2 also receives a derived $0 marker when Q1 is “None.”
 6. Final submission changes the row from partial to completed and sets completed_at.
-7. Only after completion does the separate optional contact form appear.
+7. Only after a production completion does the separate future-survey contact form appear; Test Mode shows a disabled-contact notice instead.
 
 ## Routing implemented
 
@@ -100,7 +103,7 @@ The live integration test creates a new anonymous test identity, saves a partial
 ## Privacy and operations
 
 - The app does not ask for name or TikTok handle.
-- Optional email is stored separately and is never placed inside answers.
+- Optional email is used only for future survey invitations, stored separately, and never placed inside answers.
 - The public client has no delete permission and cannot list another owner’s responses.
 - The service-role key must never be placed in this repository.
 - Test and production rows are separated by is_test and by browser-storage scope.
