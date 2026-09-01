@@ -1,11 +1,12 @@
 {
   "name": "watchtok-survey-2026",
-  "version": "0.1.0",
+  "version": "8.0.0",
   "private": true,
   "type": "module",
   "scripts": {
+    "generate": "node scripts/generate-survey-data.mjs",
+    "test:integration": "RUN_LIVE_SMOKE=1 node scripts/integration-smoke.mjs",
     "test": "node --test",
-    "check": "node --check src/app.js && node --check src/survey.js && node --check src/storage.js && node --test"
+    "check": "node --check src/app.js && node --check src/config.js && node --check src/storage.js && node --check src/supabase.js && node --check src/survey.js && node --check src/survey-data.js && node --test"
   }
 }
-

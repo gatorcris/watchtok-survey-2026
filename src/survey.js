@@ -1,85 +1,20 @@
-export const prototypeSections = [
-  {
-    id: "collecting",
-    eyebrow: "Section 1 of 5",
-    title: "Your collecting life—and what may come next",
-    intro: "We begin with actual collecting behavior, then protect the commercially valuable next-purchase outlook from late-survey fatigue.",
-    milestone: "The commercially juicy stuff is complete. Next, let’s look at how watches move from “What is that?” to “I might actually buy that.”",
-    questions: [
-      {
-        id: "prototype_purchase_count",
-        label: "Prototype question: About how many watches have you purchased in the past 12 months?",
-        hint: "Representative interaction only; this is not the frozen questionnaire wording.",
-        options: ["None", "1–2", "3–5", "6–10", "11 or more"]
-      },
-      {
-        id: "prototype_next_purchase",
-        label: "Prototype question: When do you currently expect to purchase your next watch?",
-        hint: "This measures stated outlook, not a validated prediction.",
-        options: ["Within one month", "Within 2–3 months", "Within 4–6 months", "Later", "Not currently planning one"]
-      }
-    ]
-  },
-  {
-    id: "pathway",
-    eyebrow: "Section 2 of 5",
-    title: "From discovery to confidence",
-    intro: "Creator value can appear throughout the buying journey—not only at first discovery or final purchase.",
-    milestone: "You’re past the halfway point—and still running accurately. Next, we’re looking at your openness to smaller brands and unfamiliar watches.",
-    questions: [
-      {
-        id: "prototype_creator_role",
-        type: "multi",
-        minSelections: 1,
-        maxSelections: 3,
-        label: "Prototype question: Where has watch content been most useful to you?",
-        hint: "Select all that apply, up to three.",
-        options: ["Discovering a watch or brand", "Seeing how a watch wears", "Understanding specifications", "Validating a brand or seller", "Comparing options"]
-      }
-    ]
-  },
-  {
-    id: "small_brands",
-    eyebrow: "Section 3 of 5",
-    title: "Openness to small and unfamiliar brands",
-    intro: "This section will help distinguish enthusiasts who are ready to explore microbrands from those who prefer established names.",
-    milestone: "Nicely done. The remaining questions describe the people behind WatchTok—not just who posts, but who watches, advises, connects and participates.",
-    questions: [
-      {
-        id: "prototype_small_brand",
-        label: "Prototype question: How often do microbrands or smaller independents enter your consideration set?",
-        options: ["Almost never", "Occasionally", "About half the time", "Most of the time", "Almost always"]
-      }
-    ]
-  },
-  {
-    id: "community",
-    eyebrow: "Section 4 of 5",
-    title: "Your place in the WatchTok community",
-    intro: "A few final-production questions will ask creators to estimate activity. A best reasonable estimate will be perfectly fine—no one needs to audit an entire posting history.",
-    milestone: "Final stretch. One last prototype interaction, then you’ll see the intended completion experience.",
-    questions: [
-      {
-        id: "prototype_role",
-        label: "Prototype question: Which description best reflects your WatchTok participation?",
-        options: ["Mostly watch videos", "Watch and interact", "Share and discuss privately", "Advise or connect enthusiasts", "Regularly create watch content"]
-      }
-    ]
-  },
-  {
-    id: "independence",
-    eyebrow: "Section 5 of 5",
-    title: "Research independence",
-    intro: "Brand employees may eventually participate as individual enthusiasts, while industry affiliation remains identifiable for sensitivity analysis.",
-    questions: [
-      {
-        id: "prototype_independence",
-        label: "Prototype confirmation: Is the survey’s creator-led, brand-independent framing clear?",
-        options: ["Yes", "Mostly", "Not yet"]
-      }
-    ]
-  }
+import { surveyQuestions } from "./survey-data.js";
+
+export const SURVEY_VERSION = "V8";
+export const SKIPPED = "SKIPPED";
+export const COMPLETED_STATUS = "completed";
+
+export const sections = [
+  { number: 1, title: "Collecting and purchasing", transition: "You’ve completed the collecting and purchasing questions. Next, let’s focus on the particular next watch you currently expect." },
+  { number: 2, title: "Your next watch purchase", transition: "You’ve completed the collecting and next-purchase questions. Now let’s look at how watches move from first discovery to a buying decision." },
+  { number: 3, title: "TikTok and the path to purchase", transition: "You’re past the halfway point—and still running accurately. Next, we’re looking at your openness to smaller brands and unfamiliar watches." },
+  { number: 4, title: "Small brands and collector mindset", transition: "Final stretch. These questions help us understand the people behind WatchTok—not just who posts, but who watches, comments, advises, connects, and participates." },
+  { number: 5, title: "Your WatchTok role and community", transition: "" }
 ];
+
+export function getQuestion(id) {
+  return surveyQuestions.find((question) => question.id === id);
+}
 
 export function normalizeReferral(rawValue, allowList = []) {
   if (!rawValue) return "direct";
@@ -89,9 +24,67 @@ export function normalizeReferral(rawValue, allowList = []) {
   return normalized;
 }
 
-export function progressPercent(screen, sectionCount = prototypeSections.length) {
-  if (screen === "welcome") return 0;
-  if (screen === "complete") return 100;
-  const index = Number(screen);
-  return Math.max(0, Math.min(100, Math.round(((index + 1) / sectionCount) * 100)));
+export function isQuestionVisible(question, answers = {}) {
+  if (question.id === "Q2" && answers.Q1 === "1") return false;
+  if (["Q38", "Q39", "Q40", "Q41", "Q42", "Q43"].includes(question.id) && answers.Q37 === "7") return false;
+  if (["Q22", "Q23", "Q24", "Q25"].includes(question.id) && answers.Q12 === "1") return false;
+  if (["Q14", "Q15", "Q16"].includes(question.id)) {
+    const recentActivity = Array.isArray(answers.Q13) ? answers.Q13 : [];
+    if (answers.Q12 === "1" || !recentActivity.includes("6")) return false;
+  }
+  if (["Q27", "Q28"].includes(question.id) && answers.Q26 === "14") return false;
+  return true;
 }
+
+export function visibleQuestions(answers = {}) {
+  return surveyQuestions.filter((question) => isQuestionVisible(question, answers));
+}
+
+export function serializedAnswers(answers = {}) {
+  const result = {};
+  for (const question of surveyQuestions) {
+    result[question.id] = isQuestionVisible(question, answers)
+      ? (answers[question.id] ?? null)
+      : SKIPPED;
+  }
+  if (answers.Q1 === "1") result.Q2_DERIVED_SPEND = "$0";
+  return result;
+}
+
+export function progressPercent(currentQuestionId, answers = {}, complete = false) {
+  if (complete) return 100;
+  const routed = visibleQuestions(answers);
+  const index = Math.max(0, routed.findIndex((question) => question.id === currentQuestionId));
+  return Math.round((index / routed.length) * 100);
+}
+
+export function isExclusiveOption(question, code) {
+  const label = question.options.find((option) => option.code === code)?.label.toLowerCase() || "";
+  return /^(none|none of|i am not sure|prefer not|tiktok played no|creator qualities do not|i did little or no)/i.test(label);
+}
+
+export function updateMultiAnswer(question, currentValue, changedCode, checked) {
+  let values = Array.isArray(currentValue) ? [...currentValue] : [];
+  if (!checked) return values.filter((code) => code !== changedCode);
+  if (isExclusiveOption(question, changedCode)) return [changedCode];
+  values = values.filter((code) => !isExclusiveOption(question, code));
+  if (!values.includes(changedCode)) values.push(changedCode);
+  if (question.maxSelections && values.length > question.maxSelections) {
+    return { error: `Please choose no more than ${question.maxSelections} options.`, values: currentValue || [] };
+  }
+  return values.sort((a, b) => Number(a) - Number(b));
+}
+
+export function nextQuestionId(currentQuestionId, answers = {}) {
+  const routed = visibleQuestions(answers);
+  const index = routed.findIndex((question) => question.id === currentQuestionId);
+  return routed[index + 1]?.id || null;
+}
+
+export function previousQuestionId(currentQuestionId, answers = {}) {
+  const routed = visibleQuestions(answers);
+  const index = routed.findIndex((question) => question.id === currentQuestionId);
+  return routed[index - 1]?.id || null;
+}
+
+export { surveyQuestions };

@@ -1,36 +1,21 @@
-# The 2026 WatchTok Enthusiast Survey
+# The 2026 WatchTok Enthusiast Survey — V8
 
-Production repository for a creator-led, brand-independent study of WatchTok enthusiasts and collectors.
+Deployment-ready static survey client for GitHub Pages with Supabase anonymous authentication, partial-response autosave, routed completion, referral attribution, test-mode separation, and separate optional contact consent.
 
-## Current status
+## Verify
 
-This repository contains the pre-production survey shell. It is intentionally not connected to a database and does not transmit responses. Prototype answers remain in the participant's browser.
+    npm run check
 
-The canonical questionnaire will be added only after pilot testing is complete and the instrument is frozen.
+After applying supabase/002_authenticated_client_grants.sql, run the live round-trip test:
 
-## Local preview
+    npm run test:integration
 
-Serve the repository with any static web server, then open `index.html`. For example:
+## Deploy
 
-```bash
-python -m http.server 8000
-```
+Upload the project contents to gatorcris/watchtok-survey-2026 and enable GitHub Pages. The participant client requires no build step.
 
-## Verification
+- Normal survey: https://pages-host/watchtok-survey-2026/
+- Creator referral: add ?ref=lowercase-code
+- Test response: add ?test=1
 
-```bash
-npm test
-npm run check
-```
-
-## Deployment
-
-The included GitHub Actions workflow publishes the static site to GitHub Pages. Pages should remain disabled until the first approved preview is ready.
-
-## Data safety
-
-- Never commit participant responses, email addresses, credentials, or production exports.
-- Never place Supabase service-role credentials in browser code or GitHub Pages files.
-- Optional email addresses must be stored separately from research answers.
-- The prototype is not a production data-collection system.
-
+See docs/TECHNICAL_HANDOFF_V8.md for the database contract, routing, permissions, QA gates, and launch checklist.
