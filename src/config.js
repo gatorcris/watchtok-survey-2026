@@ -6,4 +6,4 @@ export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_poVf-2ahVdtlKFwgrNuY_A_m
 export const ALLOWED_REFERRAL_CODES = [];
 
 export const PRIVACY_VERSION = "V8-launch-draft";
-export const SUPPORT_EMAIL = "bjelajac.cristopher@gmail.com";
+export const SUPPORT_EMAIL = "watchtoksurvey@gmail.com";

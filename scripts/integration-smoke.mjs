@@ -13,7 +13,7 @@ globalThis.localStorage = {
 const { ensureAnonymousSession, loadRemoteResponse, saveRemoteResponse } = await import("../src/supabase.js");
 const { COMPLETED_STATUS, SURVEY_VERSION } = await import("../src/survey.js");
 
-const session = await ensureAnonymousSession();
+const session = await ensureAnonymousSession(true);
 const startedAt = new Date().toISOString();
 const base = {
   owner_id: session.user.id,

@@ -2,6 +2,13 @@
 
 Deployment-ready static survey client for GitHub Pages with Supabase anonymous authentication, partial-response autosave, routed completion, referral attribution, test-mode separation, and separate optional contact consent.
 
+## V3 test-build updates
+
+- Production and `?test=1` now use separate browser progress and anonymous-authentication storage.
+- The approved optional-follow-up wording and public contact address are in place.
+- The header and favicon use the independent-research watch/data mark.
+- The live Supabase create/read/complete round trip passed after these changes.
+
 ## Verify
 
     npm run check

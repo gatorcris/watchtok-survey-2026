@@ -30,8 +30,8 @@ function sessionIsFresh(session) {
   return session?.access_token && Number(session.expires_at || 0) > Math.floor(Date.now() / 1000) + 60;
 }
 
-export async function ensureAnonymousSession() {
-  let session = loadAuthSession();
+export async function ensureAnonymousSession(isTest = false) {
+  let session = loadAuthSession(isTest);
   if (sessionIsFresh(session)) return session;
   if (session?.refresh_token) {
     try {
@@ -39,14 +39,14 @@ export async function ensureAnonymousSession() {
         method: "POST",
         body: JSON.stringify({ refresh_token: session.refresh_token })
       });
-      saveAuthSession(session);
+      saveAuthSession(session, isTest);
       return session;
     } catch {
       // A revoked or expired refresh token falls through to a new anonymous identity.
     }
   }
   session = await request("/auth/v1/signup", { method: "POST", body: "{}" });
-  saveAuthSession(session);
+  saveAuthSession(session, isTest);
   return session;
 }
 

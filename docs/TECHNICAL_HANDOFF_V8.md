@@ -15,6 +15,7 @@
 - Anonymous Supabase authentication; respondents do not create or manage accounts.
 - Referral capture from ?ref=code, normalized before storage.
 - A visible ?test=1 mode that stores responses with is_test=true.
+- Separate local progress and anonymous-authentication storage for production and test mode.
 - Optional email consent after research completion, written to contact_optins separately.
 
 ## Live configuration
@@ -102,8 +103,8 @@ The live integration test creates a new anonymous test identity, saves a partial
 - Optional email is stored separately and is never placed inside answers.
 - The public client has no delete permission and cannot list another owner’s responses.
 - The service-role key must never be placed in this repository.
-- Test and production rows are separated by is_test.
-- Before launch, approve final privacy/retention language and establish an organizer process for deletion requests sent to bjelajac.cristopher@gmail.com.
+- Test and production rows are separated by is_test and by browser-storage scope.
+- Before launch, approve final privacy/retention language and establish an organizer process for deletion requests sent to watchtoksurvey@gmail.com.
 
 ## Known launch decisions
 

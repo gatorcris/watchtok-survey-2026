@@ -20,7 +20,9 @@ const app = document.querySelector("#app");
 const query = new URLSearchParams(window.location.search);
 const isTest = ["1", "true", "yes"].includes((query.get("test") || "").toLowerCase());
 const referralFromUrl = normalizeReferral(query.get("ref"), ALLOWED_REFERRAL_CODES);
-const local = loadLocalState();
+const local = loadLocalState(isTest);
+const wordmark = document.querySelector(".wordmark");
+if (isTest && wordmark) wordmark.href = "?test=1";
 
 let authSession = null;
 let saveTimer = null;
@@ -58,7 +60,7 @@ function persistLocal() {
     startedAt: state.startedAt,
     updatedAt: state.updatedAt,
     status: state.status
-  });
+  }, isTest);
 }
 
 function responsePayload(status = state.status) {
@@ -148,7 +150,7 @@ function renderWelcome() {
         <div class="facts" aria-label="Survey expectations">
           <div class="fact"><strong>No name required</strong><span>The research questionnaire does not ask for your name, TikTok handle, or email address.</span></div>
           <div class="fact"><strong>Aggregate analysis</strong><span>Responses are analyzed together, not published as individual records.</span></div>
-          <div class="fact"><strong>Optional follow-up</strong><span>After completion, you may separately provide an email for the report or future research.</span></div>
+          <div class="fact"><strong>Optional follow-up</strong><span>After completion, you may separately provide an email to be involved in future surveys.</span></div>
         </div>
         <p class="privacy-copy">By starting, you consent to the use of your answers for this independent WatchTok research. You may stop and return on this device. To request deletion, contact ${escapeHtml(SUPPORT_EMAIL)}.</p>
         <div class="actions">
@@ -384,7 +386,7 @@ app.addEventListener("submit", async (event) => {
 async function initialize() {
   render();
   try {
-    authSession = await ensureAnonymousSession();
+    authSession = await ensureAnonymousSession(isTest);
     const remote = await loadRemoteResponse(authSession, SURVEY_VERSION, isTest);
     if (remote) {
       const remoteIsNewer = !state.updatedAt || new Date(remote.updated_at) >= new Date(state.updatedAt);

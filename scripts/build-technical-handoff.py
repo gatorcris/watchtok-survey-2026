@@ -279,8 +279,8 @@ add_bullets(doc, [
     "No name or TikTok handle is requested in the research instrument.",
     "Optional email is never placed inside answers JSONB.",
     "The public client cannot read another owner’s response.",
-    "Test and production responses are separated by is_test.",
-    "Deletion requests route to bjelajac.cristopher@gmail.com.",
+    "Test and production responses are separated by is_test and by browser-storage scope.",
+    "Deletion requests route to watchtoksurvey@gmail.com.",
     "Final privacy/retention language and a recoverable fielding backup process remain launch gates.",
 ])
 

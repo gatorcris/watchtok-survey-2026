@@ -7,12 +7,14 @@
 Command: npm run check
 
 - JavaScript syntax checks: passed
-- Automated tests: 10 passed, 0 failed
+- Automated tests: 14 passed, 0 failed
 - Frozen questionnaire: 43 questions confirmed in display order
 - Conditional routing: passed
 - SKIPPED serialization and derived Q2 spend: passed
 - Multi-select exclusivity and three-choice limits: passed
 - Routed-path progress calculation: passed
+- Production/test browser-state separation: passed
+- Approved V3 wording, public email, and logo asset checks: passed
 
 ## Live Supabase smoke test
 
@@ -25,4 +27,4 @@ Passed after the authenticated-client permission migration was applied.
 - Test-data separation: confirmed is_test=true
 - Contact opt-in insertion: intentionally not performed
 
-The final completed smoke-test response ID was 4b5861f9-72cc-4578-967e-b1f7eaadac7b.
+The final completed V3 smoke-test response ID was a35e4629-3fe9-4cf4-a055-d5ce90282976.
