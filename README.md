@@ -1,31 +1,37 @@
-# The 2026 WatchTok Enthusiast Survey — V8
+# WATCHTOK SURVEY — V9 Final Candidate
 
-Deployment-ready static survey client for GitHub Pages with Supabase anonymous authentication, partial-response autosave, routed completion, referral attribution, test-mode separation, and separate optional contact consent.
+Deployment-ready static survey client for GitHub Pages with Supabase anonymous authentication, partial-response autosave, routed completion, test-mode separation, and separate optional contact consent.
 
-## V4 test-build updates
+## V9 final-candidate updates
 
-- Production and `?test=1` now use separate browser progress and anonymous-authentication storage.
-- The approved optional-follow-up wording and public contact address are in place.
-- The header and favicon use the independent-research watch/data mark.
-- Question instructions render once, without exposed Markdown markers.
-- The first section transition uses the approved next-watch wording.
-- Optional contact consent is only for future survey invitations; Test Mode cannot save contact information.
-- The live Supabase create/read/complete round trip passed after these changes.
+- The primary wordmark is now **WATCHTOK SURVEY** across the participant experience.
+- The official public campaign uses one canonical, untagged URL: `https://watchtoksurvey.com/`.
+- The companion QR asset points to that same canonical URL and contains no creator-specific attribution.
+- Internal CSS and test language no longer refer to the release as a prototype.
+- Browser progress and anonymous-authentication storage are versioned for V9.
+- Legacy `?ref=` handling remains in place for controlled research use, but referral links are not part of the official public distribution plan.
+
+Rebuild the two campaign graphics with `python3 scripts/build-qr-card.py` and `python3 scripts/build-social-card.py`. Both scripts use Pillow; the QR builder also uses ReportLab.
 
 ## Verify
 
     npm run check
 
-After applying supabase/002_authenticated_client_grants.sql, run the live round-trip test:
+After applying `supabase/002_authenticated_client_grants.sql`, the optional live round-trip test is:
 
     npm run test:integration
 
+The live test creates one clearly marked `is_test=true` response.
+
 ## Deploy
 
-Upload the project contents to gatorcris/watchtok-survey-2026 and enable GitHub Pages. The participant client requires no build step.
+Upload the project contents to `gatorcris/watchtok-survey-2026`. GitHub Pages serves the participant client directly; there is no build step.
 
-- Normal survey: https://pages-host/watchtok-survey-2026/
-- Creator referral: add ?ref=lowercase-code
-- Test response: add ?test=1
+- Official survey: https://watchtoksurvey.com/
+- Creator-neutral QR card: https://watchtoksurvey.com/assets/watchtok-survey-qr-mobile.png
+- Test response: https://watchtoksurvey.com/?test=1
+- Founding Creator briefing: https://watchtoksurvey.com/watchtok-survey-founding-creator-briefing-v2.pdf
 
-See docs/TECHNICAL_HANDOFF_V8.md for the database contract, routing, permissions, QA gates, and launch checklist.
+The site intentionally remains `noindex,nofollow` until the coordinated public launch. Direct links and QR codes work normally while indexing is disabled. Remove the robots restrictions only if organic search discovery is desired.
+
+See `docs/TECHNICAL_HANDOFF_V9.md` for the database contract, routing, privacy controls, QA gates, and launch checklist.

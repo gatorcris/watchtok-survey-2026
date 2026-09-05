@@ -80,7 +80,7 @@ button, input, [tabindex] { scroll-margin: 1rem; }
   filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .16));
 }
 
-.prototype-badge {
+.research-badge {
   padding: 6px 10px;
   border: 1px solid rgba(255,255,255,.35);
   border-radius: 999px;
@@ -176,7 +176,7 @@ footer { color: #bfc7d1; text-align: center; font-size: .76rem; padding-bottom: 
 @media (max-width: 680px) {
   .page-shell { padding: 14px; gap: 15px; }
   .site-header { padding: 5px 2px; }
-  .prototype-badge { font-size: .59rem; letter-spacing: .08em; }
+  .research-badge { font-size: .59rem; letter-spacing: .08em; }
   .wordmark { font-size: .82rem; }
   .research-mark { width: 35px; height: 35px; }
   .panel { padding: 29px 21px 25px; }
@@ -189,7 +189,7 @@ footer { color: #bfc7d1; text-align: center; font-size: .76rem; padding-bottom: 
 }
 
 @media (max-width: 420px) {
-  .prototype-badge { display: none; }
+  .research-badge { display: none; }
   .wordmark small { letter-spacing: .11em; }
 }
 
