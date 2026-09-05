@@ -1,6 +1,6 @@
 import { surveyQuestions } from "./survey-data.js";
 
-export const SURVEY_VERSION = "V8";
+export const SURVEY_VERSION = "V9";
 export const SKIPPED = "SKIPPED";
 export const COMPLETED_STATUS = "completed";
 

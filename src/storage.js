@@ -1,5 +1,5 @@
-const STATE_KEY = "watchtok-survey-v8-state";
-const AUTH_KEY = "watchtok-survey-v8-auth";
+const STATE_KEY = "watchtok-survey-v9-state";
+const AUTH_KEY = "watchtok-survey-v9-auth";
 
 export function storageKeys(isTest = false) {
   const scope = isTest ? "test" : "production";
