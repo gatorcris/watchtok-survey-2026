@@ -1,6 +1,15 @@
-# WATCHTOK SURVEY — V9 Final Candidate
+# WATCHTOK SURVEY — V9 Reliability Update V1
 
 Deployment-ready static survey client for GitHub Pages with Supabase anonymous authentication, partial-response autosave, routed completion, test-mode separation, and separate optional contact consent.
+
+## Reliability update
+
+- Serializes database saves so a delayed partial save cannot follow final completion.
+- Renews the anonymous session and retries one failed database write once.
+- Warns participants as soon as synchronization fails instead of waiting until final submission.
+- Provides retry and local recovery-download controls without including authentication credentials.
+- Preserves the complete V9 questionnaire, routing, answer codes, privacy page, and database schema.
+- Verifies the required authenticated `SELECT`, `INSERT`, and `UPDATE` grant in the automated test suite.
 
 ## V9 final-candidate updates
 

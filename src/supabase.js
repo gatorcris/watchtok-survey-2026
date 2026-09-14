@@ -26,13 +26,13 @@ async function request(path, options = {}, accessToken = null) {
   return body;
 }
 
-function sessionIsFresh(session) {
+export function sessionIsFresh(session) {
   return session?.access_token && Number(session.expires_at || 0) > Math.floor(Date.now() / 1000) + 60;
 }
 
-export async function ensureAnonymousSession(isTest = false) {
+export async function ensureAnonymousSession(isTest = false, forceRefresh = false) {
   let session = loadAuthSession(isTest);
-  if (sessionIsFresh(session)) return session;
+  if (!forceRefresh && sessionIsFresh(session)) return session;
   if (session?.refresh_token) {
     try {
       session = await request("/auth/v1/token?grant_type=refresh_token", {

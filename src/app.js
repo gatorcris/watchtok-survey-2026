@@ -17,6 +17,7 @@ import {
 } from "./survey.js";
 import { loadLocalState, saveLocalState } from "./storage.js";
 import { ensureAnonymousSession, loadRemoteResponse, saveRemoteResponse, submitContactOptIn } from "./supabase.js";
+import { classifySyncFailure, createRecoverySnapshot, createSerialQueue } from "./reliability.js";
 
 const app = document.querySelector("#app");
 const query = new URLSearchParams(window.location.search);
@@ -28,6 +29,7 @@ if (isTest && wordmark) wordmark.href = "?test=1";
 
 let authSession = null;
 let saveTimer = null;
+const enqueueSync = createSerialQueue();
 let state = {
   view: local?.view || "welcome",
   currentQuestionId: local?.currentQuestionId || "Q1",
@@ -38,6 +40,9 @@ let state = {
   updatedAt: local?.updatedAt || null,
   status: local?.status || "partial",
   sync: "connecting",
+  syncIssue: "",
+  syncReference: "",
+  pendingCompletion: false,
   error: "",
   contactStatus: ""
 };
@@ -82,28 +87,56 @@ function responsePayload(status = state.status) {
   };
 }
 
+async function writeResponse(status, forceRefresh = false) {
+  authSession = await ensureAnonymousSession(isTest, forceRefresh);
+  return saveRemoteResponse(authSession, responsePayload(status));
+}
+
 async function syncNow(status = state.status) {
-  if (!authSession) return false;
-  state.sync = "saving";
-  renderSyncStatus();
-  try {
-    await saveRemoteResponse(authSession, responsePayload(status));
-    state.sync = "saved";
+  return enqueueSync(async () => {
+    state.sync = "saving";
     renderSyncStatus();
-    return true;
-  } catch (error) {
-    state.sync = "offline";
-    state.error = status === COMPLETED_STATUS
-      ? "We could not submit your response yet. Your answers are safe on this device; please check your connection and try again."
-      : "";
-    renderSyncStatus();
-    return false;
-  }
+    try {
+      try {
+        await writeResponse(status);
+      } catch (firstError) {
+        await writeResponse(status, true);
+      }
+      state.sync = "saved";
+      state.syncIssue = "";
+      state.syncReference = "";
+      renderSyncStatus();
+      return true;
+    } catch (error) {
+      state.sync = "offline";
+      state.syncReference = classifySyncFailure(error);
+      state.syncIssue = status === COMPLETED_STATUS
+        ? "We could not submit your response. Your answers remain saved on this device. Keep this page open and try again."
+        : "We cannot save your response to the research database right now. Your answers remain on this device. Keep this page open and retry saving before you leave.";
+      renderSyncStatus();
+      return false;
+    }
+  });
 }
 
 function scheduleSync() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => syncNow(), 500);
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    syncNow();
+  }, 500);
+}
+
+function syncIssueMarkup() {
+  return `<div class="sync-warning" data-sync-warning role="alert" ${state.syncIssue ? "" : "hidden"}>
+    <strong>Database save needs attention.</strong>
+    <span data-sync-warning-text>${escapeHtml(state.syncIssue)}</span>
+    <span class="sync-reference" data-sync-reference>${state.syncReference ? `Reference: ${escapeHtml(state.syncReference)}` : ""}</span>
+    <div class="sync-warning-actions">
+      <button class="button button-secondary button-small" type="button" data-action="retry-sync">Retry saving</button>
+      <button class="button button-secondary button-small" type="button" data-action="download-recovery">Download recovery copy</button>
+    </div>
+  </div>`;
 }
 
 function renderSyncStatus() {
@@ -117,6 +150,27 @@ function renderSyncStatus() {
   };
   element.textContent = labels[state.sync] || "";
   element.dataset.state = state.sync;
+  const warning = app.querySelector("[data-sync-warning]");
+  if (warning) {
+    warning.hidden = !state.syncIssue;
+    const message = warning.querySelector("[data-sync-warning-text]");
+    const reference = warning.querySelector("[data-sync-reference]");
+    if (message) message.textContent = state.syncIssue;
+    if (reference) reference.textContent = state.syncReference ? `Reference: ${state.syncReference}` : "";
+  }
+}
+
+function downloadRecoveryCopy() {
+  const snapshot = createRecoverySnapshot(state, SURVEY_VERSION);
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `watchtok-survey-recovery-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function progressMarkup() {
@@ -155,6 +209,7 @@ function renderWelcome() {
           <div class="fact"><strong>Optional follow-up</strong><span>After completion, you may separately provide an email to be involved in future surveys.</span></div>
         </div>
         <p class="privacy-copy">By starting, you consent to the use of your answers for this independent WatchTok research. You may stop and return on this device. To request deletion, contact ${escapeHtml(SUPPORT_EMAIL)}.</p>
+        ${syncIssueMarkup()}
         <div class="actions">
           <span class="saved" data-sync-status aria-live="polite"></span>
           <button class="button button-primary" type="button" data-action="start">${returning ? "Continue survey" : "Start survey"}</button>
@@ -200,6 +255,7 @@ function renderQuestion() {
           <div class="options">${options}</div>
         </fieldset>
         <p class="error" role="alert">${escapeHtml(state.error)}</p>
+        ${syncIssueMarkup()}
         <div class="actions">
           <button class="button button-secondary" type="button" data-action="back">Back</button>
           <span class="saved" data-sync-status aria-live="polite"></span>
@@ -222,6 +278,7 @@ function renderTransition() {
         <p class="eyebrow">Section complete</p>
         <h2>Keep it ticking.</h2>
         <p class="lede">${escapeHtml(priorSection?.transition || "You’re making excellent progress.")}</p>
+        ${syncIssueMarkup()}
         <div class="actions actions-end">
           <span class="saved" data-sync-status aria-live="polite"></span>
           <button class="button button-primary" type="button" data-action="continue-section">Continue</button>
@@ -313,9 +370,25 @@ app.addEventListener("change", (event) => {
   renderSyncStatus();
 });
 
-app.addEventListener("click", (event) => {
+app.addEventListener("click", async (event) => {
   const action = event.target.closest("[data-action]")?.dataset.action;
   if (!action) return;
+  if (action === "download-recovery") {
+    downloadRecoveryCopy();
+    return;
+  }
+  if (action === "retry-sync") {
+    const retryStatus = state.pendingCompletion ? COMPLETED_STATUS : state.status;
+    const saved = await syncNow(retryStatus);
+    if (saved && state.pendingCompletion) {
+      state.pendingCompletion = false;
+      state.status = COMPLETED_STATUS;
+      state.view = "complete";
+      persistLocal();
+    }
+    render();
+    return;
+  }
   if (action === "start") {
     state.startedAt ||= new Date().toISOString();
     state.view = "question";
@@ -381,8 +454,12 @@ app.addEventListener("submit", async (event) => {
   state.error = "";
   const nextId = nextQuestionId(question.id, state.answers);
   if (!nextId) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    state.pendingCompletion = true;
     const submitted = await syncNow(COMPLETED_STATUS);
     if (!submitted) return renderQuestion();
+    state.pendingCompletion = false;
     state.status = COMPLETED_STATUS;
     state.view = "complete";
     persistLocal();
@@ -412,9 +489,13 @@ async function initialize() {
       }
     }
     state.sync = "saved";
+    state.syncIssue = "";
+    state.syncReference = "";
     persistLocal();
-  } catch {
+  } catch (error) {
     state.sync = "offline";
+    state.syncReference = classifySyncFailure(error);
+    state.syncIssue = "We cannot connect to the research database right now. You may continue, but keep this page open and retry saving before you leave.";
   }
   render();
 }

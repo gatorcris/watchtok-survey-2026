@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   COMPLETED_STATUS,
   SKIPPED,
+  SURVEY_VERSION,
   nextQuestionId,
   normalizeReferral,
   progressPercent,
@@ -15,7 +16,11 @@ import {
   visibleQuestions
 } from "../src/survey.js";
 
-test("the database completion status uses the V8 schema value", () => {
+test("the client identifies final-candidate responses as V9", () => {
+  assert.equal(SURVEY_VERSION, "V9");
+});
+
+test("the database completion status uses the production schema value", () => {
   assert.equal(COMPLETED_STATUS, "completed");
 });
 

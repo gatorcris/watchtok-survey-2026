@@ -1,4 +1,4 @@
--- WatchTok Survey V8 browser-role grants
+-- WatchTok Survey V9 browser-role grants
 -- Required because tables created through the SQL editor do not automatically
 -- receive API privileges even when row-level security policies already exist.
 
@@ -17,4 +17,4 @@ grant insert on table public.contact_optins to authenticated;
 commit;
 
 select
-  'WatchTok V8 authenticated client grants applied successfully' as result;
+  'WatchTok V9 authenticated client grants applied successfully' as result;

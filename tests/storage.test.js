@@ -19,6 +19,8 @@ const {
 test("production and test modes use separate progress and authentication keys", () => {
   assert.notEqual(storageKeys(false).state, storageKeys(true).state);
   assert.notEqual(storageKeys(false).auth, storageKeys(true).auth);
+  assert.match(storageKeys(false).state, /v9/);
+  assert.match(storageKeys(false).auth, /v9/);
 
   saveLocalState({ currentQuestionId: "Q2" }, false);
   saveLocalState({ currentQuestionId: "Q9" }, true);
