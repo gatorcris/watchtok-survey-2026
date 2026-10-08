@@ -16,6 +16,8 @@ const MEMBER_TYPES = [
 
 const app = document.getElementById("results-app");
 const bar = document.getElementById("account-bar");
+// Where confirmation and password-reset emails send people back to (this page, no hash or query).
+const RETURN_URL = `${location.origin}${location.pathname}`;
 
 // ------------------------------------------------------------------ helpers
 
@@ -131,8 +133,9 @@ function showMsg(form, text, kind = "error") {
   el.textContent = text;
 }
 
-function renderGate(mode = "register", notice = "") {
+function renderGate(mode = "register", notice = "", kind = "ok") {
   bar.hidden = true;
+  if (mode === "forgot") return renderForgot(notice, kind);
   const isRegister = mode === "register";
   app.innerHTML = `
     <div class="gate-shell">
@@ -159,19 +162,64 @@ function renderGate(mode = "register", notice = "") {
           <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
           <button class="gate-btn" type="submit">Sign in</button>
         </form>
-        <p class="gate-fine">Forgot your password? Email <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a> and we'll reset it.</p>`}
+        <p class="gate-fine"><a href="#" id="forgot-link">Forgot your password?</a></p>`}
         <p class="gate-fine">We use your details only to manage access to these results. Survey responses are shown only as anonymous totals. <a href="../privacy.html">Privacy Statement</a></p>
       </section>
     </div>`;
 
   app.querySelectorAll("[data-mode]").forEach((btn) => btn.addEventListener("click", () => renderGate(btn.dataset.mode)));
+  app.querySelector("#forgot-link")?.addEventListener("click", (e) => { e.preventDefault(); renderGate("forgot"); });
   const form = app.querySelector("form");
-  if (notice) showMsg(form, notice, "ok");
+  if (notice) showMsg(form, notice, kind);
   form.addEventListener("submit", isRegister ? onRegister : onSignIn);
   form.querySelector("input")?.focus();
 }
 
+function renderForgot(notice = "", kind = "ok") {
+  app.innerHTML = `
+    <div class="gate-shell">
+      <section class="gate-card" aria-labelledby="gate-title">
+        ${brandBlock()}
+        <h1 id="gate-title">Reset your password</h1>
+        <p class="gate-sub">Enter the email you registered with and we'll send you a link to choose a new password.</p>
+        <form class="gate-form" id="forgot-form" novalidate>
+          <label>Email<input name="email" type="email" autocomplete="email" required /></label>
+          <button class="gate-btn" type="submit">Send reset link</button>
+          <button class="gate-btn secondary" type="button" id="back-signin">Back to sign in</button>
+        </form>
+        <p class="gate-fine">No email after a few minutes? Check your spam folder, or write to <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>
+      </section>
+    </div>`;
+  const form = app.querySelector("form");
+  if (notice) showMsg(form, notice, kind);
+  form.addEventListener("submit", onForgot);
+  app.querySelector("#back-signin").addEventListener("click", () => renderGate("signin"));
+  form.querySelector("input")?.focus();
+}
+
+function renderNewPassword(notice = "") {
+  bar.hidden = true;
+  app.innerHTML = `
+    <div class="gate-shell">
+      <section class="gate-card" aria-labelledby="gate-title">
+        ${brandBlock()}
+        <h1 id="gate-title">Choose a new password</h1>
+        <form class="gate-form" id="newpw-form" novalidate>
+          <label>New password <span class="hint">At least 8 characters</span><input name="password" type="password" autocomplete="new-password" minlength="8" required /></label>
+          <label>Type it again<input name="password2" type="password" autocomplete="new-password" minlength="8" required /></label>
+          <button class="gate-btn" type="submit">Save password</button>
+        </form>
+      </section>
+    </div>`;
+  const form = app.querySelector("form");
+  if (notice) showMsg(form, notice, "error");
+  form.addEventListener("submit", onNewPassword);
+  form.querySelector("input")?.focus();
+}
+
 function renderProfileForm(notice = "") {
+  // After an email confirmation, prefill what the person already typed when they signed up.
+  const meta = current.session?.user?.user_metadata || {};
   bar.hidden = true;
   app.innerHTML = `
     <div class="gate-shell">
@@ -180,9 +228,9 @@ function renderProfileForm(notice = "") {
         <h1>Finish your registration</h1>
         <p class="gate-sub">A few details before we open the results.</p>
         <form class="gate-form" id="profile-form" novalidate>
-          <label>Full name<input name="full_name" autocomplete="name" required maxlength="120" /></label>
-          <label>Brand or organization <span class="hint">Optional</span><input name="organization" maxlength="160" /></label>
-          <label>I am a…<select name="member_type" required>${memberTypeOptions()}</select></label>
+          <label>Full name<input name="full_name" autocomplete="name" required maxlength="120" value="${esc(meta.full_name)}" /></label>
+          <label>Brand or organization <span class="hint">Optional</span><input name="organization" maxlength="160" value="${esc(meta.organization)}" /></label>
+          <label>I am a…<select name="member_type" required>${memberTypeOptions(meta.member_type || "")}</select></label>
           <label>Collaborator passcode <span class="hint">Only if you were given one</span><input name="passcode" autocomplete="off" spellcheck="false" /></label>
           <button class="gate-btn" type="submit">Continue</button>
           <button class="gate-btn secondary" type="button" id="profile-signout">Sign out</button>
@@ -237,13 +285,14 @@ async function onRegister(event) {
 
   setBusy(form, true);
   try {
-    const result = await api("/auth/v1/signup", {
+    const result = await api(`/auth/v1/signup?redirect_to=${encodeURIComponent(RETURN_URL)}`, {
       method: "POST",
       body: { email: v.email, password: v.password, data: { full_name: v.full_name, organization: v.organization, member_type: v.member_type } }
     });
     if (!result?.access_token) {
       setBusy(form, false);
-      renderGate("signin", "Account created. Check your email to confirm it, then sign in here.");
+      const pc = v.passcode ? " If you have a collaborator passcode, you'll enter it after confirming." : "";
+      renderGate("signin", `Almost there. We sent a confirmation link to ${v.email}. Click it to open the results (check spam if you don't see it).${pc}`);
       return;
     }
     saveSession(result);
@@ -266,6 +315,37 @@ async function onSignIn(event) {
     saveSession(session);
     await enter();
     logEvent("login");
+  } catch (error) {
+    setBusy(form, false);
+    showMsg(form, friendlyError(error));
+  }
+}
+
+async function onForgot(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const v = readForm(form);
+  if (!/^\S+@\S+\.\S+$/.test(v.email)) return showMsg(form, "Please enter a valid email.");
+  setBusy(form, true);
+  try {
+    await api(`/auth/v1/recover?redirect_to=${encodeURIComponent(RETURN_URL)}`, { method: "POST", body: { email: v.email } });
+    renderForgot(`If ${v.email} has an account, a reset link is on its way. It works once and expires after a while.`);
+  } catch (error) {
+    setBusy(form, false);
+    showMsg(form, friendlyError(error));
+  }
+}
+
+async function onNewPassword(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const v = readForm(form);
+  if (v.password.length < 8) return showMsg(form, "Please use a password of at least 8 characters.");
+  if (v.password !== v.password2) return showMsg(form, "The two passwords don't match.");
+  setBusy(form, true);
+  try {
+    await api("/auth/v1/user", { method: "PUT", token: await token(), body: { password: v.password } });
+    await enter();
   } catch (error) {
     setBusy(form, false);
     showMsg(form, friendlyError(error));
@@ -417,7 +497,8 @@ async function renderReport(notice = "") {
 
   logEvent(hasFull ? "view_full" : "view_sample", (full || sample).version);
   // The report's nav highlighter can nudge the page on first paint; start at the top unless a section was linked.
-  const target = location.hash && location.hash !== "#" ? document.querySelector(location.hash) : null;
+  let target = null;
+  try { target = location.hash && location.hash !== "#" ? document.querySelector(location.hash) : null; } catch { /* not a section link */ }
   setTimeout(() => (target ? target.scrollIntoView() : window.scrollTo(0, 0)), 150);
 }
 
@@ -435,9 +516,45 @@ async function enter(notice = "") {
 
 // ------------------------------------------------------------------ start
 
+// Links in confirmation and password-reset emails come back here with the result in the
+// address (#access_token=...&type=signup|recovery, or #error=...). Sign the person in and
+// clean the address so the tokens don't linger in history or get shared.
+async function handleAuthRedirect() {
+  const raw = location.hash.startsWith("#") ? location.hash.slice(1) : "";
+  if (!/(^|&)(access_token|error|error_description)=/.test(raw)) return false;
+  const p = new URLSearchParams(raw);
+  history.replaceState(null, "", RETURN_URL);
+  if (p.get("error") || p.get("error_description")) {
+    const expired = /expired|invalid/i.test(`${p.get("error_code")} ${p.get("error_description")}`);
+    renderGate("signin", expired
+      ? "That link has expired or was already used. Sign in below, or use \"Forgot your password?\" to get a new link."
+      : (p.get("error_description") || "That link didn't work. Please sign in."), "error");
+    return true;
+  }
+  const expiresIn = Number(p.get("expires_in") || 3600);
+  const session = {
+    access_token: p.get("access_token"),
+    refresh_token: p.get("refresh_token"),
+    token_type: p.get("token_type") || "bearer",
+    expires_in: expiresIn,
+    expires_at: Number(p.get("expires_at") || Math.floor(Date.now() / 1000) + expiresIn)
+  };
+  try {
+    session.user = await api("/auth/v1/user", { token: session.access_token });
+  } catch {
+    renderGate("signin", "That link didn't work. Please sign in, or use \"Forgot your password?\" to get a new link.", "error");
+    return true;
+  }
+  saveSession(session);
+  if (p.get("type") === "recovery") renderNewPassword();
+  else await enter();
+  return true;
+}
+
 (async function start() {
   // report-lib.js is deferred; make sure it has run before drawing.
   if (document.readyState === "loading") await new Promise((r) => document.addEventListener("DOMContentLoaded", r, { once: true }));
+  if (await handleAuthRedirect()) return;
   const session = await validSession();
   if (session) await enter();
   else renderGate("register");
