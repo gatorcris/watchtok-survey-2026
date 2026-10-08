@@ -87,3 +87,24 @@ nav.top a.locked::after { content: " 🔒"; font-size: .7rem; }
 .locked-panel .gate-form label { color: var(--ink); }
 
 .version-note { text-align: center; font-size: .75rem; color: var(--slate); padding: 18px 16px 40px; }
+
+/* V43: hero banner, fact row, chevrons, Behind-the-numbers explainers */
+.fact-row{display:flex;gap:28px;align-items:center;}
+.fact-row > p{flex:1;margin:0;}
+.fact-side{flex:0 0 190px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;}
+.fact-side img{width:96px;height:96px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 3px var(--gold,#EFC24D),0 8px 20px rgba(0,0,0,.18);}
+.fact-n{font-family:'Space Mono',monospace;font-weight:700;font-size:1.6rem;line-height:1;color:var(--ink,#10192E);}
+.fact-l{font-size:.8rem;line-height:1.35;color:var(--slate,#5b6475);margin-top:4px;}
+@media (max-width:640px){.fact-row{flex-direction:column;align-items:flex-start;gap:16px;}.fact-side{flex-direction:row;text-align:left;flex-basis:auto;}.fact-side img{width:72px;height:72px;}}
+header.hero{padding-top:0;}
+.hero-banner{position:relative;margin:0 -20px 34px;min-height:clamp(380px,40vw,540px);display:flex;align-items:center;
+  background:linear-gradient(90deg,rgba(11,18,34,.82) 0%,rgba(11,18,34,.4) 28%,rgba(11,18,34,0) 50%),var(--hero-img) right center / cover no-repeat;}
+.hero-banner::after{content:"";position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(180deg,transparent,var(--navy-deep,#0B1222));pointer-events:none;}
+.hero-banner .wrap{position:relative;z-index:1;width:100%;padding:0 20px;}
+.hero-banner h1{text-shadow:0 2px 20px rgba(0,0,0,.5);}
+@media (max-width:640px){.hero-banner{min-height:360px;align-items:flex-end;padding-bottom:40px;background:linear-gradient(180deg,rgba(11,18,34,.25) 0%,rgba(11,18,34,.8) 100%),var(--hero-img) 72% center / cover no-repeat;}.hero-banner .wrap{padding:0 40px;}}
+details.appendix > summary .chev{display:inline-block;font-size:1rem;margin-right:4px;transition:transform .15s ease;}
+details.appendix[open] > summary .chev{transform:rotate(180deg);}
+
+details.appendix .appendix-body > p.lead-text{font-size:.85rem;}
+.todo{background:#FCE38A;color:#10192E;padding:0 4px;border-radius:3px;font-weight:700;}
