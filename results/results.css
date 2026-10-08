@@ -108,3 +108,7 @@ details.appendix[open] > summary .chev{transform:rotate(180deg);}
 
 details.appendix .appendix-body > p.lead-text{font-size:.85rem;}
 .todo{background:#FCE38A;color:#10192E;padding:0 4px;border-radius:3px;font-weight:700;}
+
+.interim-note{display:inline-block;margin:0 0 18px;padding:8px 14px;border-radius:999px;background:rgba(239,194,77,.14);border:1px solid rgba(239,194,77,.55);color:#F5E6B8;font-size:.86rem;line-height:1.4;}
+.interim-note b{color:#EFC24D;}
+@media (max-width:640px){.interim-note{border-radius:12px;display:block;}}
