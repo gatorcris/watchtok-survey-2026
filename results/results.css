@@ -124,3 +124,8 @@ details.appendix .appendix-body > p.lead-text{font-size:.85rem;}
 .interim-note{display:inline-block;margin:0 0 18px;padding:8px 14px;border-radius:999px;background:rgba(239,194,77,.14);border:1px solid rgba(239,194,77,.55);color:#F5E6B8;font-size:.86rem;line-height:1.4;}
 .interim-note b{color:#EFC24D;}
 @media (max-width:640px){.interim-note{border-radius:12px;display:block;}}
+
+/* Locked panel sits inside the report, which follows the viewer's light/dark setting. */
+.locked-panel .gate-fine { color: var(--slate); }
+.locked-panel .gate-fine strong { color: var(--ink-soft); }
+.locked-panel .gate-fine a { color: var(--gold); text-decoration: underline; }

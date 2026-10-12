@@ -116,3 +116,17 @@ where user_id = (select user_id from results_members where email = 'person@brand
 ```
 
 **Give someone full access:** `select results_set_tier('person@brand.com', 'full');`
+
+### Email alert for each new request
+
+Each first-time request emails **watchtoksurvey@gmail.com** from results@watchtoksurvey.com. Hit **Reply** to answer the brand directly.
+
+1. **Resend → API Keys → Create API Key.** Name it `supabase-request-alerts`, permission **Sending access**, domain **watchtoksurvey.com**. Copy the key (starts with `re_`). Never paste it into a chat.
+2. **Supabase → SQL Editor → New query**, paste this with your key in place of `re_YOUR_KEY`, and Run:
+   ```sql
+   select vault.create_secret('re_YOUR_KEY', 'resend_api_key');
+   ```
+3. **New query:** paste `supabase/012_results_access_request_email.sql`, Run, and expect `WatchTok request-access email alert installed`.
+4. **Test:** in a preview account that hasn't requested yet, tap **Request full access**. The email arrives within a minute.
+
+If no email arrives, check Resend → Logs, and confirm step 2 used the name `resend_api_key` exactly.
