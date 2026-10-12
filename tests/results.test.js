@@ -84,3 +84,17 @@ test("committed results files never contain report content", () => {
 test("built content is git-ignored", () => {
   assert.match(fs.readFileSync(".gitignore", "utf8"), /^build\/$/m);
 });
+
+// Guard: the results site code on main has features that the report builder's
+// pinned copy (builder/site-base, commit 793358f) does not. Replacing these files
+// from that copy would silently remove them. If one of these fails, start from
+// current main instead of regenerating results/app.js or results/results.css.
+test("results site keeps the Request full access button and its styles", () => {
+  const app = fs.readFileSync("results/app.js", "utf8");
+  const css = fs.readFileSync("results/results.css", "utf8");
+  assert.match(app, /id="request-access-btn"/, "Request full access button missing from results/app.js");
+  assert.match(app, /results_request_access/, "request-access call missing from results/app.js");
+  assert.match(app, /passcode-details/, "collapsed collaborator passcode missing from results/app.js");
+  assert.match(css, /\.access-btn/, "button styles missing from results/results.css");
+  assert.match(css, /\.locked-panel \.gate-fine a \{ color: var\(--gold\)/, "dark-mode link fix missing from results/results.css");
+});
