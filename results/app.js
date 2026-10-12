@@ -385,6 +385,55 @@ async function onRedeem(event) {
   }
 }
 
+// Where a visitor came from (e.g. watchtoksurvey.com/results/?ref=windup on the brand card).
+// Kept on the device as first touch, so it survives the email-confirmation round trip.
+const REF_KEY = "watchtok-results-ref";
+function captureRef() {
+  try {
+    const ref = (new URLSearchParams(location.search).get("ref") || "").toLowerCase().trim();
+    if (/^[a-z0-9-]{1,32}$/.test(ref) && !localStorage.getItem(REF_KEY)) localStorage.setItem(REF_KEY, ref);
+  } catch { /* storage blocked: source just isn't recorded */ }
+}
+function storedRef() {
+  try { return localStorage.getItem(REF_KEY) || null; } catch { return null; }
+}
+
+async function loadAccessRequest() {
+  try {
+    const rows = await api(`/rest/v1/results_access_requests?select=first_requested_at&user_id=eq.${current.session.user.id}`, { token: await token() });
+    return rows?.[0] || null;
+  } catch {
+    return null; // never block the report over this
+  }
+}
+
+function requestedNote(email) {
+  return `<p class="gate-msg ok" role="status">Request received. We'll reach out to <strong>${esc(email)}</strong> about full access.</p>`;
+}
+
+async function onRequestAccess(event) {
+  const btn = event.currentTarget;
+  const box = btn.closest(".access-request");
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+  try {
+    const result = await api("/rest/v1/rpc/results_request_access", {
+      method: "POST",
+      token: await token(),
+      body: { p_source: storedRef(), p_results_version: current.version || null }
+    });
+    if (result?.already_full) return enter();
+    box.innerHTML = requestedNote(result?.email || current.member.email);
+  } catch (error) {
+    btn.disabled = false;
+    btn.textContent = "Request full access";
+    let msg = box.querySelector(".gate-msg");
+    if (!msg) { msg = document.createElement("p"); msg.setAttribute("role", "status"); box.appendChild(msg); }
+    msg.className = "gate-msg error";
+    msg.textContent = `${friendlyError(error)} You can also email ${SUPPORT_EMAIL}.`;
+  }
+}
+
 async function signOut() {
   const session = current.session;
   clearSession();
@@ -435,9 +484,10 @@ function buildNav(toc, unlocked) {
     </nav>`;
 }
 
-function lockedPanel(toc, unlocked, notice) {
+function lockedPanel(toc, unlocked, request) {
   const locked = toc.filter((s) => !unlocked.has(s.id));
   if (!locked.length) return "";
+  const email = current.member.email;
   return `
     <section class="locked-panel" id="locked">
       <div class="wrap">
@@ -446,11 +496,19 @@ function lockedPanel(toc, unlocked, notice) {
           <h2 class="section-title">There's more behind this preview</h2>
           <p class="lead-text">Full access adds:</p>
           <ul>${locked.map((s) => `<li>${esc(s.title)}</li>`).join("")}</ul>
-          <form class="gate-form" id="redeem-form" novalidate>
-            <label>Have a collaborator passcode?<input name="passcode" autocomplete="off" spellcheck="false" /></label>
-            <button class="gate-btn" type="submit">Unlock full report</button>
-          </form>
-          <p class="gate-fine">Brand access options are coming soon. Questions: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
+          <div class="access-request">
+            ${request ? requestedNote(email) : `
+            <button class="gate-btn access-btn" type="button" id="request-access-btn">Request full access</button>
+            <p class="gate-fine">One tap. We'll contact you at <strong>${esc(email)}</strong>, no forms.</p>`}
+          </div>
+          <details class="passcode-details">
+            <summary>Have a collaborator passcode?</summary>
+            <form class="gate-form" id="redeem-form" novalidate>
+              <label>Passcode<input name="passcode" autocomplete="off" spellcheck="false" /></label>
+              <button class="gate-btn secondary" type="submit">Unlock full report</button>
+            </form>
+          </details>
+          <p class="gate-fine">Questions: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
         </div>
       </div>
     </section>`;
@@ -461,7 +519,12 @@ async function renderReport(notice = "") {
   app.innerHTML = `<div class="gate-shell"><p class="gate-loading">Opening the results…</p></div>`;
   const hasFull = current.member.tier === "full" || current.member.tier === "admin";
 
-  const [sample, full] = await Promise.all([fetchBundle("sample"), hasFull ? fetchBundle("full") : Promise.resolve(null)]);
+  const [sample, full, request] = await Promise.all([
+    fetchBundle("sample"),
+    hasFull ? fetchBundle("full") : Promise.resolve(null),
+    hasFull ? Promise.resolve(null) : loadAccessRequest()
+  ]);
+  current.version = (full || sample).version;
   const urls = await signAssets(hasFull && full ? full.assets : sample.assets);
   const toc = sample.toc || sample.sections;
   const unlocked = new Set([...sample.sections, ...(full?.sections || [])].map((s) => s.id));
@@ -476,14 +539,18 @@ async function renderReport(notice = "") {
   app.innerHTML = buildNav(toc, unlocked);
   if (hero) app.appendChild(hero);
   ordered.forEach((el) => app.appendChild(el));
-  app.insertAdjacentHTML("beforeend", lockedPanel(toc, unlocked, notice));
+  app.insertAdjacentHTML("beforeend", lockedPanel(toc, unlocked, request));
   if (footer) app.appendChild(footer);
   app.insertAdjacentHTML("beforeend", `<p class="version-note">Results version ${esc((full || sample).version)}</p>`);
 
+  app.querySelector("#request-access-btn")?.addEventListener("click", onRequestAccess);
   const redeem = app.querySelector("#redeem-form");
   if (redeem) {
     redeem.addEventListener("submit", onRedeem);
-    if (notice) showMsg(redeem, notice);
+    if (notice) {
+      redeem.closest("details").open = true;
+      showMsg(redeem, notice);
+    }
   }
 
   // Draw charts: the chart code comes from the private bundles, drawn with the public library.
@@ -554,6 +621,7 @@ async function handleAuthRedirect() {
 (async function start() {
   // report-lib.js is deferred; make sure it has run before drawing.
   if (document.readyState === "loading") await new Promise((r) => document.addEventListener("DOMContentLoaded", r, { once: true }));
+  captureRef();
   if (await handleAuthRedirect()) return;
   const session = await validSession();
   if (session) await enter();

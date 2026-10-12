@@ -89,3 +89,30 @@ select results_set_tier('person@example.com', 'full');    -- or 'sample'
 - `supabase/010_results_access.sql` — accounts, tiers, passcodes, private bucket rules.
 - `scripts/build-results-content.mjs` — splits the report into preview and full content.
 - `build/` — generated content for upload; git-ignored, never committed.
+
+---
+
+## "Request full access" (lead capture)
+
+Preview viewers see a **Request full access** button at the bottom of the report. One tap records a request under their existing account (name, email, organization). No form.
+
+**Install once:** SQL Editor → New query → paste `supabase/011_results_access_requests.sql` → Run → expect `WatchTok "Request full access" installed`. It only adds a new table; it changes nothing existing.
+
+**Track where leads came from:** add `?ref=` to any link, e.g. the Windup brand card: `watchtoksurvey.com/results/?ref=windup`. Lowercase letters, numbers and dashes only.
+
+**See your leads (newest first):**
+```sql
+select m.full_name, m.email, m.organization, r.source, r.request_count,
+       r.status, r.first_requested_at
+from results_access_requests r
+join results_members m using (user_id)
+order by r.first_requested_at desc;
+```
+
+**Mark progress** (`new` → `contacted` → `granted` or `declined`):
+```sql
+update results_access_requests set status = 'contacted'
+where user_id = (select user_id from results_members where email = 'person@brand.com');
+```
+
+**Give someone full access:** `select results_set_tier('person@brand.com', 'full');`
