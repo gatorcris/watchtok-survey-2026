@@ -29,3 +29,9 @@ Build and maintain The 2026 WatchTok Enthusiast Survey as a mobile-first, access
 - Keep the GitHub Pages front end static and put privileged operations behind a server-side endpoint.
 - Preserve URL referral codes only after validating and normalizing them.
 
+
+## Results site (watchtoksurvey.com/results)
+
+- `results/app.js` and `results/results.css` on `main` are the source of truth. Edit them in place; never regenerate or replace them from an older copy (e.g. a report builder's pinned `site-base`). `tests/results.test.js` fails if the Request full access button or its styles go missing.
+- Report content never goes in this repo; it lives in the private Supabase bucket.
+- Supabase scripts in `supabase/` are run by hand in the SQL Editor, in number order.
