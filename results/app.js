@@ -142,7 +142,7 @@ function renderGate(mode = "register", notice = "", kind = "ok") {
       <section class="gate-card" aria-labelledby="gate-title">
         ${brandBlock()}
         <h1 id="gate-title">The 2026 WatchTok Enthusiast Survey results</h1>
-        <p class="gate-sub">Five buyer personas, market sizing, and what they mean for your brand. Free registration unlocks the preview; collaborators with a passcode get the full report.</p>
+        <p class="gate-sub">How WatchTok works, what the community spends, and a playbook for reaching it. Free registration unlocks the preview; collaborators with a passcode get the full report.</p>
         <div class="gate-tabs" role="tablist">
           <button type="button" role="tab" data-mode="register" aria-selected="${isRegister}">Create account</button>
           <button type="button" role="tab" data-mode="signin" aria-selected="${!isRegister}">Sign in</button>
@@ -541,6 +541,11 @@ async function renderReport(notice = "") {
   ordered.forEach((el) => app.appendChild(el));
   app.insertAdjacentHTML("beforeend", lockedPanel(toc, unlocked, request));
   if (footer) app.appendChild(footer);
+  // In-report links to locked sections (e.g. the hero's "In this report" list) go to the full-access panel.
+  const lockedIds = new Set(toc.filter((s) => !unlocked.has(s.id)).map((s) => s.id));
+  app.querySelectorAll('a[href^="#"]').forEach((a) => {
+    if (lockedIds.has(a.getAttribute("href").slice(1))) a.setAttribute("href", "#locked");
+  });
   app.insertAdjacentHTML("beforeend", `<p class="version-note">Results version ${esc((full || sample).version)}</p>`);
 
   app.querySelector("#request-access-btn")?.addEventListener("click", onRequestAccess);

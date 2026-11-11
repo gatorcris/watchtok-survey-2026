@@ -214,6 +214,77 @@ window.WTCharts = (function () {
     hostEl.appendChild(svg);
   }
 
+  // ---------------- Quarter-bullseye (Core as the target, trends flow outward) ----------------
+  function quarter(hostEl, cfg) {
+    const idp = cfg.idPrefix || Math.random().toString(36).slice(2, 8);
+    const W = cfg.width || 820, H = cfg.height || 430;
+    const cx = 16, cy = 16;               // corner at top-left; rings fan down and right
+    const svg = makeSvg(W, H);
+    addDefs(svg);
+    const defs = svg.querySelector("defs");
+    const rings = cfg.rings;               // outer to inner
+    const outer = rings[0].radius;
+    rings.forEach((r, i) => {
+      const grad = el("radialGradient", { id: `wtq-${idp}-${i}`, gradientUnits: "userSpaceOnUse", cx, cy, r: r.radius });
+      const hi = r.highlight;
+      grad.innerHTML = `<stop offset="0%" stop-color="${r.color}" stop-opacity="${hi ? .85 : .30}"/><stop offset="70%" stop-color="${r.color}" stop-opacity="${hi ? .55 : .26}"/><stop offset="100%" stop-color="${r.color}" stop-opacity="${hi ? .38 : .10}"/>`;
+      defs.appendChild(grad);
+      const d = `M ${cx} ${cy} L ${cx + r.radius} ${cy} A ${r.radius} ${r.radius} 0 0 1 ${cx} ${cy + r.radius} Z`;
+      svg.appendChild(el("path", { d, fill: `url(#wtq-${idp}-${i})`, stroke: r.color, "stroke-width": hi ? 2.4 : 1.4, "stroke-opacity": .9 }));
+    });
+
+    // ripples: trends radiating out from the core (skipped for reduced-motion)
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) {
+      [0, 1.1, 2.2].forEach(delay => {
+        const g = el("g", { transform: `translate(${cx} ${cy})` });
+        const path = el("path", { d: `M ${outer} 0 A ${outer} ${outer} 0 0 1 0 ${outer}`, fill: "none", stroke: "#EFC46D", "stroke-width": 2.2, "vector-effect": "non-scaling-stroke", opacity: 0 });
+        path.innerHTML =
+          `<animateTransform attributeName="transform" type="scale" values="0.3;1" dur="3.3s" begin="${delay}s" repeatCount="indefinite"/>` +
+          `<animate attributeName="opacity" values="0;.75;0" keyTimes="0;.15;1" dur="3.3s" begin="${delay}s" repeatCount="indefinite"/>`;
+        g.appendChild(path);
+        svg.appendChild(g);
+      });
+    }
+
+    // flow arrow from the core out through the rings
+    const ang = cfg.arrowAngle || 50, rad = ang * Math.PI / 180;
+    const r0 = rings[rings.length - 1].radius + 14, r1 = outer - 18;
+    const ax0 = cx + r0 * Math.cos(rad), ay0 = cy + r0 * Math.sin(rad);
+    const ax1 = cx + r1 * Math.cos(rad), ay1 = cy + r1 * Math.sin(rad);
+    svg.appendChild(el("line", { x1: ax0, y1: ay0, x2: ax1, y2: ay1, stroke: "#EFC46D", "stroke-width": 3, "stroke-linecap": "round" }));
+    const hx = 14, hw = 8;
+    const ux = Math.cos(rad), uy = Math.sin(rad);
+    svg.appendChild(el("polygon", { points: `${ax1 + ux * 8},${ay1 + uy * 8} ${ax1 - ux * hx - uy * hw},${ay1 - uy * hx + ux * hw} ${ax1 - ux * hx + uy * hw},${ay1 - uy * hx - ux * hw}`, fill: "#EFC46D" }));
+    const mx = (ax0 + ax1) / 2 - uy * 16, my = (ay0 + ay1) / 2 + ux * 16;   // offset to the lower-left of the arrow
+    svg.appendChild(el("text", { x: mx, y: my, fill: "#EFC46D", "font-size": 13, "font-weight": 800, "letter-spacing": "2", "text-anchor": "middle", transform: `rotate(${ang} ${mx} ${my})` }, cfg.arrowLabel || "TRENDS START HERE, THEN SPREAD OUT"));
+
+    // target ticks on the core arc
+    const core = rings[rings.length - 1];
+    [20, 45, 70].forEach(a => {
+      const t = a * Math.PI / 180;
+      svg.appendChild(el("line", { x1: cx + (core.radius - 10) * Math.cos(t), y1: cy + (core.radius - 10) * Math.sin(t), x2: cx + (core.radius + 8) * Math.cos(t), y2: cy + (core.radius + 8) * Math.sin(t), stroke: "#EFC46D", "stroke-width": 2 }));
+    });
+
+    // leader lines + labels on the right (Core on top, Casuals at the bottom)
+    const labelX = cfg.labelX || 500;
+    rings.slice().reverse().forEach(r => {
+      const t = r.angle * Math.PI / 180;
+      const px = cx + r.radius * Math.cos(t), py = cy + r.radius * Math.sin(t);
+      const hi = r.highlight;
+      svg.appendChild(el("circle", { cx: px, cy: py, r: hi ? 5 : 3.5, fill: r.color }));
+      svg.appendChild(el("line", { x1: px, y1: py, x2: labelX - 14, y2: r.labelY, stroke: r.color, "stroke-width": hi ? 2 : 1.2, "stroke-opacity": hi ? 1 : .7, "stroke-dasharray": hi ? "" : "4 4" }));
+      const g = el("g", {});
+      g.appendChild(el("text", { x: labelX, y: r.labelY - (hi ? 18 : 12), fill: hi ? "#EFC46D" : "#fff", "font-size": hi ? 26 : 17, "font-weight": 800, "letter-spacing": hi ? "1.5" : "1" }, r.name));
+      g.appendChild(el("text", { x: labelX, y: r.labelY + (hi ? 8 : 6), fill: hi ? "#fff" : NAVY_TEXT, "font-size": hi ? 20 : 14.5, "font-weight": hi ? 700 : 400 }, r.people));
+      g.appendChild(el("text", { x: labelX, y: r.labelY + (hi ? 32 : 25), fill: NAVY_TEXT, "font-size": hi ? 15 : 13, "font-style": "italic" }, r.spend));
+      g.appendChild(el("text", { x: labelX, y: r.labelY + (hi ? 62 : 47), fill: hi ? "#EFC46D" : "#fff", "font-size": hi ? 30 : 17, "font-weight": 800 }, r.total));
+      if (r.tag) g.appendChild(el("text", { x: labelX, y: r.labelY + 88, fill: "#fff", "font-size": 15, "font-weight": 600, "letter-spacing": ".4" }, r.tag));
+      svg.appendChild(g);
+    });
+    hostEl.appendChild(svg);
+  }
+
   // ---------------- Dot/line comparison (two methods) ----------------
   function dotline(hostEl, cfg) {
     const W = cfg.width || 760, H = cfg.height || 300;
@@ -357,34 +428,12 @@ window.WTCharts = (function () {
     hostEl.appendChild(svg);
   }
 
-  return { bubble, hbar, concentric, dotline, heatmap, demoSplit };
+  return { bubble, hbar, concentric, quarter, dotline, heatmap, demoSplit };
 })();
+
 window.WTReportUI = function () {
 
 (function(){
-  // toggle: two-way / three-way
-  document.querySelectorAll('.toggle-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var scope = btn.closest('section');
-      scope.querySelectorAll('.toggle-btn').forEach(function(b){b.classList.remove('active');});
-      scope.querySelectorAll('.toggle-panel').forEach(function(p){p.classList.remove('active');});
-      btn.classList.add('active');
-      var target = document.getElementById(btn.getAttribute('data-target'));
-      if(target) target.classList.add('active');
-    });
-  });
-
-  // persona tabs
-  document.querySelectorAll('.ptab').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var p = btn.getAttribute('data-p');
-      document.querySelectorAll('.ptab').forEach(function(b){b.classList.remove('active');});
-      document.querySelectorAll('.persona-panel').forEach(function(pan){pan.classList.remove('active');});
-      btn.classList.add('active');
-      var panel = document.querySelector('.persona-panel[data-p="'+p+'"]');
-      if(panel) panel.classList.add('active');
-    });
-  });
 
   // mobile nav drawer toggle
   try{
@@ -421,6 +470,16 @@ window.WTReportUI = function () {
     }
   }catch(e){}
 
+  // persona tabs
+  try{
+    var tabs=document.querySelectorAll('.ptab'), panels=document.querySelectorAll('.persona-panel');
+    tabs.forEach(function(t){ t.addEventListener('click', function(){
+      var k=t.getAttribute('data-p');
+      tabs.forEach(function(x){ x.classList.toggle('active', x===t); });
+      panels.forEach(function(p){ p.classList.toggle('active', p.getAttribute('data-p')===k); });
+    }); });
+  }catch(e){}
+
   // active nav link on scroll
   try{
     var links = Array.from(document.querySelectorAll('nav.top a'));
@@ -447,5 +506,66 @@ window.WTReportUI = function () {
     sections.forEach(function(s){ io.observe(s); });
   }catch(e){}
 })();
+
+
+
+// ---- Scroll-in animations: bars grow, cells pop, numbers count up (off for reduced-motion) ----
+(function(){
+try{
+  if(!('IntersectionObserver' in window)) return;
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  function add(elm,cls,d){ elm.classList.add(cls); if(d!==undefined) elm.style.setProperty('--d',d+'s'); }
+
+  document.querySelectorAll('.live-chart-panel').forEach(function(panel){
+    var svg=panel.querySelector('svg'); if(!svg) return;
+    svg.querySelectorAll('rect[fill^="url(#wtbar-"], rect[fill="#5B8CE0"][rx]').forEach(function(r,k){
+      add(r,'wt-anim-bar',k*0.09);
+      var t=r.nextElementSibling; if(t&&t.tagName.toLowerCase()==='text') add(t,'wt-anim-fade',k*0.09+0.9);
+    });
+    svg.querySelectorAll('rect[rx="8"]').forEach(function(r,k){ add(r,'wt-anim-pop',(k%8)*0.05+Math.floor(k/8)*0.08); });
+    svg.querySelectorAll('path[stroke="#12192A"]').forEach(function(pth,k){ add(pth,'wt-anim-pop',k*0.15); });
+    svg.querySelectorAll('line[stroke="rgba(255,255,255,.5)"]').forEach(function(l,k){ add(l,'wt-anim-bar',k*0.25); });
+    svg.querySelectorAll('circle[r="6"]').forEach(function(c,k){ add(c,'wt-anim-pop',0.9+Math.floor(k/2)*0.25+(k%2)*0.4); });
+  });
+
+  document.querySelectorAll('.journey-flow, .loop-flow').forEach(function(flow){
+    Array.prototype.forEach.call(flow.children,function(c,k){ add(c,'wt-anim-up',k*0.14); });
+  });
+
+  function parse(txt){ var m=txt.trim().match(/^([^\d]*)(\d[\d,]*\.?\d*)([%KMB]?)$/); if(!m) return null;
+    var dec=(m[2].split('.')[1]||'').length, comma=m[2].indexOf(',')>-1; return {pre:m[1],val:parseFloat(m[2].replace(/,/g,'')),dec:dec,comma:comma,suf:m[3]}; }
+  function fmt(p,v){ var s=v.toFixed(p.dec); if(p.comma){ var parts=s.split('.'); parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,','); s=parts.join('.'); } return p.pre+s+p.suf; }
+  var counters=[];
+  document.querySelectorAll('.stat-hero .num, .target-head .t-num, .band-chip .n').forEach(function(n){
+    if(n.children.length) return; var p=parse(n.textContent); if(!p) return; n._p=p; n._final=n.textContent; counters.push(n);
+  });
+  function run(n){ var p=n._p, dur=1500, t0=null;
+    function step(ts){ if(t0===null) t0=ts; var k=Math.min((ts-t0)/dur,1), e=1-Math.pow(1-k,3); n.textContent=fmt(p,p.val*e); if(k<1) requestAnimationFrame(step); else n.textContent=n._final; }
+    n.textContent=fmt(p,0); requestAnimationFrame(step); }
+
+  var io=new IntersectionObserver(function(entries){ entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('wt-in'); io.unobserve(en.target); } }); },{threshold:.2});
+  document.querySelectorAll('.live-chart-panel, .journey-flow, .loop-flow').forEach(function(e){ io.observe(e); });
+  var io2=new IntersectionObserver(function(entries){ entries.forEach(function(en){ if(en.isIntersecting){ run(en.target); io2.unobserve(en.target); } }); },{threshold:.6});
+  counters.forEach(function(n){ io2.observe(n); });
+}catch(e){}
+})();
+
+
+(function(){ try{
+  var cards=[].slice.call(document.querySelectorAll('.cs-card')), logos=[].slice.call(document.querySelectorAll('.ch-logo')), panels=[].slice.call(document.querySelectorAll('.cs-panel'));
+  function open(id, scroll){
+    panels.forEach(function(p){ p.hidden = (p.id!==id); });
+    cards.forEach(function(c){ c.setAttribute('aria-expanded', c.getAttribute('data-open')===id ? 'true':'false'); });
+    var p=document.getElementById(id); if(p && scroll){ p.scrollIntoView({behavior:'smooth', block:'start'}); }
+  }
+  function closeAll(){ var open=panels.filter(function(p){return !p.hidden;})[0]; panels.forEach(function(p){p.hidden=true;}); cards.forEach(function(c){c.setAttribute('aria-expanded','false');}); var row=open&&open.previousElementSibling; if(row) row.scrollIntoView({behavior:'smooth', block:'start'}); }
+  cards.forEach(function(c){ c.addEventListener('click', function(){ var id=c.getAttribute('data-open'); if(c.getAttribute('aria-expanded')==='true'){ closeAll(); } else { open(id, true); } }); });
+  logos.forEach(function(l){ l.addEventListener('click', function(){ var id=l.getAttribute('data-open'); var c=document.querySelector('.cs-card[data-open="'+id+'"]'); if(c) c.click(); }); });
+  [].slice.call(document.querySelectorAll('[data-close]')).forEach(function(b){ b.addEventListener('click', closeAll); });
+  function fromHash(){ var h=(location.hash||'').slice(1); if(h && document.getElementById(h) && document.getElementById(h).classList.contains('cs-panel')){ open(h, true); } }
+  window.addEventListener('hashchange', fromHash);
+  [].slice.call(document.querySelectorAll('a[href^="#case-"]')).forEach(function(a){ a.addEventListener('click', function(ev){ var id=a.getAttribute('href').slice(1); if(document.getElementById(id)){ ev.preventDefault(); open(id, true); } }); });
+  fromHash();
+}catch(e){} })();
 
 };

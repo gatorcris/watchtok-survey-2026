@@ -2,7 +2,7 @@
 // Split the published results report into public code + private, tiered content.
 //
 // Usage:
-//   node scripts/build-results-content.mjs <report-folder> --version V8 [--out build/results-content]
+//   node scripts/build-results-content.mjs <report-folder> --version V8 [--sample market,personas] [--out build/results-content]
 //
 // <report-folder> must contain index.html (the report page) and assets/ (its images).
 //
@@ -17,14 +17,29 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Sections any registered viewer sees. Everything else is full-access only.
+// Override per build with --sample (e.g. --sample community,market for the Nov 2026 playbook).
 export const SAMPLE_SECTIONS = ["market", "personas"];
+
+// Interaction-only scripts (no survey data) that run after the report is drawn.
+// They go into the public library with the nav/tab code.
+const UI_SCRIPT = /toggle-btn|navToggle/;
+const EXTRA_UI_SCRIPTS = /Scroll-in animations|querySelectorAll\('\.cs-card'\)/;
+// A chart call, optionally guarded with "document.getElementById('x') && ".
+const CHART_CALL = /(?:document\.getElementById\('[^']+'\)\s*&&\s*)?WTCharts\.\w+\(document\.getElementById\('([^']+)'\),[\s\S]*?\n\}\);/g;
 
 export function splitReport(html, { version = "draft", sampleSections = SAMPLE_SECTIONS } = {}) {
   const body = html.slice(html.indexOf("<body>") + 6);
 
-  const styles = [...body.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join("\n");
+  // CSS comments are dropped: report.css is public and authors' comments can quote report figures.
+  const styles = [...body.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join("\n").replace(/\/\*[\s\S]*?\*\//g, "");
 
-  const hero = (body.match(/<header class="hero">[\s\S]*?<\/header>/) || [""])[0];
+  let hero = (body.match(/<header class="hero">[\s\S]*?<\/header>/) || [""])[0];
+  // report.css is served from the repo, where assets/ doesn't exist. A banner photo set in CSS as
+  // var(--hero-img, url(assets/x.jpg)) is moved onto the banner element so it ships with the content.
+  const heroImg = styles.match(/var\(--hero-img,\s*url\(['"]?assets\/([\w.-]+)['"]?\)\)/);
+  if (heroImg && !/--hero-img/.test(hero)) {
+    hero = hero.replace(/class="hero-banner"/, `class="hero-banner" style="--hero-img:url(assets/${heroImg[1]})"`);
+  }
   const footer = (body.match(/<footer>[\s\S]*?<\/footer>/) || [""])[0];
   const navBlock = (body.match(/<nav class="top">[\s\S]*?<\/nav>/) || [""])[0];
   const navTitles = Object.fromEntries(
@@ -43,14 +58,15 @@ export function splitReport(html, { version = "draft", sampleSections = SAMPLE_S
   }
 
   const scripts = [...body.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  const uiScript = scripts.find((s) => s.includes("toggle-btn")) || "";
-  const chartScript = scripts.find((s) => s.includes("WTCharts")) || "";
+  const uiScript = scripts.find((s) => UI_SCRIPT.test(s)) || "";
+  const extraUi = scripts.filter((s) => s !== uiScript && EXTRA_UI_SCRIPTS.test(s));
+  // The chart library, and the chart calls (in the same script, or in a separate "Populate" script).
+  const chartScript = scripts.find((s) => /(const|let|var)\s+WTCharts\s*=/.test(s)) || "";
   const libEnd = chartScript.search(/\n\s*\/\/ ---- Populate|\ntry \{\s*\nWTCharts\./);
-  const chartLib = libEnd > 0 ? chartScript.slice(0, libEnd) : "";
-  const callSource = libEnd > 0 ? chartScript.slice(libEnd) : "";
-  const calls = [...callSource.matchAll(/WTCharts\.\w+\(document\.getElementById\('([^']+)'\),[\s\S]*?\n\}\);/g)].map(
-    (m) => ({ target: m[1], code: m[0] })
-  );
+  const chartLib = libEnd > 0 ? chartScript.slice(0, libEnd) : chartScript;
+  const populateScripts = scripts.filter((s) => s !== chartScript && /\/\/ ---- Populate/.test(s));
+  const callSource = (libEnd > 0 ? chartScript.slice(libEnd) : "") + "\n" + populateScripts.join("\n");
+  const calls = [...callSource.matchAll(CHART_CALL)].map((m) => ({ target: m[1], code: m[0] }));
 
   const chartsByTier = { sample: [], full: [] };
   for (const call of calls) {
@@ -61,12 +77,15 @@ export function splitReport(html, { version = "draft", sampleSections = SAMPLE_S
   // Any other scripts (e.g. the appendix data + its renderer) may carry survey data.
   // They go to the sample tier only when every element they draw into is in a sample
   // section; otherwise (or when unsure) they are full-access only.
-  const extraScripts = scripts.filter((s) => s !== uiScript && s !== chartScript && s.trim());
+  const handled = new Set([uiScript, chartScript, ...populateScripts, ...extraUi]);
+  const extraScripts = scripts.filter((s) => !handled.has(s) && s.trim());
+  const inHero = (id) => hero.includes(`id="${id}"`);
   // A data script with no drawing target (e.g. APPENDIX_SECTIONS) therefore lands in full.
   const extraByTier = { sample: [], full: [] };
   for (const code of extraScripts) {
     const targets = [...code.matchAll(/getElementById\(\s*['"]([^'"]+)['"]\s*\)/g)].map((m) => m[1]);
-    const owners = targets.map((id) => sections.find((s) => s.html.includes(`id="${id}"`)));
+    // The hero is part of the sample tier.
+    const owners = targets.map((id) => (inHero(id) ? { tier: "sample" } : sections.find((s) => s.html.includes(`id="${id}"`))));
     const allSample = owners.length > 0 && owners.every((o) => o && o.tier === "sample");
     extraByTier[allSample ? "sample" : "full"].push(code);
   }
@@ -105,6 +124,7 @@ export function splitReport(html, { version = "draft", sampleSections = SAMPLE_S
     chartLib.replace(/^\s*(const|let|var)\s+WTCharts\s*=/m, "window.WTCharts ="),
     "window.WTReportUI = function () {",
     uiScript,
+    ...extraUi,
     "};"
   ].join("\n");
 
@@ -130,7 +150,8 @@ function main() {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   const outDir = path.resolve(args.out || path.join(repoRoot, "build", "results-content"));
   const html = fs.readFileSync(path.join(reportDir, "index.html"), "utf8");
-  const result = splitReport(html, { version: args.version });
+  const sampleSections = args.sample ? args.sample.split(",").map((x) => x.trim()).filter(Boolean) : SAMPLE_SECTIONS;
+  const result = splitReport(html, { version: args.version, sampleSections });
 
   fs.writeFileSync(path.join(repoRoot, "results", "report.css"), `/* Generated from the report page. */\n${result.styles}`);
   fs.writeFileSync(path.join(repoRoot, "results", "report-lib.js"), result.publicLib);
