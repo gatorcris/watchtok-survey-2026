@@ -142,7 +142,7 @@ function renderGate(mode = "register", notice = "", kind = "ok") {
       <section class="gate-card" aria-labelledby="gate-title">
         ${brandBlock()}
         <h1 id="gate-title">The 2026 WatchTok Enthusiast Survey results</h1>
-        <p class="gate-sub">Five buyer personas, market sizing, and what they mean for your brand. Free registration unlocks the preview; collaborators with a passcode get the full report.</p>
+        <p class="gate-sub">How WatchTok works, what the community spends, and a playbook for reaching it. Free registration unlocks the preview; collaborators with a passcode get the full report.</p>
         <div class="gate-tabs" role="tablist">
           <button type="button" role="tab" data-mode="register" aria-selected="${isRegister}">Create account</button>
           <button type="button" role="tab" data-mode="signin" aria-selected="${!isRegister}">Sign in</button>
