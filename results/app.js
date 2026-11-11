@@ -541,6 +541,11 @@ async function renderReport(notice = "") {
   ordered.forEach((el) => app.appendChild(el));
   app.insertAdjacentHTML("beforeend", lockedPanel(toc, unlocked, request));
   if (footer) app.appendChild(footer);
+  // In-report links to locked sections (e.g. the hero's "In this report" list) go to the full-access panel.
+  const lockedIds = new Set(toc.filter((s) => !unlocked.has(s.id)).map((s) => s.id));
+  app.querySelectorAll('a[href^="#"]').forEach((a) => {
+    if (lockedIds.has(a.getAttribute("href").slice(1))) a.setAttribute("href", "#locked");
+  });
   app.insertAdjacentHTML("beforeend", `<p class="version-note">Results version ${esc((full || sample).version)}</p>`);
 
   app.querySelector("#request-access-btn")?.addEventListener("click", onRequestAccess);

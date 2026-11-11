@@ -98,3 +98,50 @@ test("results site keeps the Request full access button and its styles", () => {
   assert.match(css, /\.access-btn/, "button styles missing from results/results.css");
   assert.match(css, /\.locked-panel \.gate-fine a \{ color: var\(--gold\)/, "dark-mode link fix missing from results/results.css");
 });
+
+// Nov 2026 playbook layout: chart calls live in their own "Populate" script and are
+// guarded with "document.getElementById('x') && ", the nav script has no toggle-btn,
+// and the hero can carry its own small script.
+const playbook = `<!doctype html><html><head></head><body>
+<style>.x{color:red}</style>
+<nav class="top"><div class="nav-links" id="navLinks"><a href="#community">How It Works</a><a href="#market">What It's Worth</a><a href="#personas">Who's There</a></div><button id="navToggle"></button></nav>
+<header class="hero"><span id="heroCount">155K</span><a href="#personas">Who's there</a></header>
+<section id="community"><p>Community</p></section>
+<section class="alt" id="market"><div id="chart-a"></div><div id="chart-x"></div></section>
+<section id="personas"><div id="chart-b"></div><p>PERSONA-SECRET</p></section>
+<footer><p>Foot</p></footer>
+<script>(function(){ var t=document.getElementById('navToggle'); })();</script>
+<script>
+const WTCharts = (function () {
+  function hbar() {}
+  return { hbar };
+})();
+</script>
+<script>
+// ---- Populate every live chart panel with real survey data ----
+try {
+document.getElementById('chart-a') && WTCharts.hbar(document.getElementById('chart-a'), {
+  bars: [{value: 11}]
+});
+document.getElementById('chart-b') && WTCharts.hbar(document.getElementById('chart-b'), {
+  bars: [{value: 535353}]
+});
+} catch(e) {}
+</script>
+<script>(function(){var el=document.getElementById('heroCount'); var to=155;})();</script>
+<script>// ---- Scroll-in animations ----
+(function(){ document.querySelectorAll('.live-chart-panel'); })();</script>
+<script>(function(){ var host=document.getElementById('chart-x'); var micro=[47,62]; })();</script>
+</body></html>`;
+
+test("playbook layout: guarded chart calls split by tier; hero and sample scripts stay in sample", () => {
+  const { bundles, publicLib, calls } = splitReport(playbook, { version: "T2", sampleSections: ["community", "market"] });
+  assert.equal(calls.length, 2);
+  assert.deepEqual(bundles.sample.sections.map((s) => s.id), ["community", "market"]);
+  assert.ok(bundles.sample.charts.includes("chart-a") && !bundles.sample.charts.includes("535353"));
+  assert.ok(bundles.full.charts.includes("535353"));
+  assert.ok(bundles.sample.charts.includes("var to=155") && bundles.sample.charts.includes("micro=[47,62]"));
+  assert.ok(!bundles.sample.html.includes("PERSONA-SECRET"));
+  assert.ok(publicLib.includes("window.WTCharts =") && publicLib.includes("navToggle") && publicLib.includes("Scroll-in animations"));
+  assert.ok(!publicLib.includes("535353") && !publicLib.includes("var to=155") && !publicLib.includes("micro=[47"));
+});
