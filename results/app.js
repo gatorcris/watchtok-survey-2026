@@ -96,9 +96,35 @@ async function token() {
 }
 
 async function loadMember() {
-  const rows = await api(`/rest/v1/results_members?select=email,full_name,organization,member_type,tier&user_id=eq.${current.session.user.id}`, { token: await token() });
-  current.member = rows?.[0] || null;
+  const base = "email,full_name,organization,member_type,tier";
+  const query = async (cols) => api(`/rest/v1/results_members?select=${cols}&user_id=eq.${current.session.user.id}`, { token: await token() });
+  let rows;
+  try {
+    rows = await query(`${base},access_until`);
+  } catch (error) {
+    // Database not yet upgraded with access end dates (supabase/013): carry on without them.
+    if (error.status !== 400) throw error;
+    rows = await query(base);
+  }
+  current.member = withAccessEnd(rows?.[0] || null);
   return current.member;
+}
+
+// Full access can have an end date. The database enforces it (report files stop opening);
+// here it only decides what the page shows.
+function withAccessEnd(m) {
+  if (!m) return m;
+  m.accessUntil = m.access_until ? new Date(m.access_until) : null;
+  m.accessEnded = m.tier === "full" && !!m.accessUntil && m.accessUntil.getTime() <= Date.now();
+  if (m.accessEnded) m.tier = "sample";
+  return m;
+}
+
+// The last full day of access, e.g. "Dec 31, 2026" (end dates are midnight US Eastern).
+function accessDay(date) {
+  return new Date(date.getTime() - 1000).toLocaleDateString("en-US", {
+    month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York"
+  });
 }
 
 function logEvent(event, detail = null) {
@@ -245,7 +271,8 @@ function renderProfileForm(notice = "") {
 
 function renderAccountBar() {
   const m = current.member;
-  const label = m.tier === "sample" ? "Preview access" : m.tier === "admin" ? "Admin" : "Full access";
+  const label = m.tier === "sample" ? "Preview access" : m.tier === "admin" ? "Admin"
+    : m.accessUntil ? `Full access through ${accessDay(m.accessUntil)}` : "Full access";
   bar.innerHTML = `<span>${esc(m.full_name)} · ${esc(m.email)}</span><span class="tier-pill">${label}</span><button type="button" id="signout-btn">Sign out</button>`;
   bar.hidden = false;
   bar.querySelector("#signout-btn").addEventListener("click", signOut);
@@ -487,21 +514,27 @@ function buildNav(toc, unlocked) {
 function lockedPanel(toc, unlocked, request) {
   const locked = toc.filter((s) => !unlocked.has(s.id));
   if (!locked.length) return "";
-  const email = current.member.email;
+  const { email, accessEnded, accessUntil } = current.member;
+  const heading = accessEnded
+    ? `Your full access ended on ${accessDay(accessUntil)}`
+    : "There's more behind this preview";
+  const lead = accessEnded
+    ? "You're back on the free preview. Request full access again, or enter a new passcode. Full access includes:"
+    : "Full access adds:";
   return `
     <section class="locked-panel" id="locked">
       <div class="wrap">
         <div class="locked-card">
           <div class="kicker">Full report</div>
-          <h2 class="section-title">There's more behind this preview</h2>
-          <p class="lead-text">Full access adds:</p>
+          <h2 class="section-title">${esc(heading)}</h2>
+          <p class="lead-text">${lead}</p>
           <ul>${locked.map((s) => `<li>${esc(s.title)}</li>`).join("")}</ul>
           <div class="access-request">
             ${request ? requestedNote(email) : `
             <button class="gate-btn access-btn" type="button" id="request-access-btn">Request full access</button>
             <p class="gate-fine">One tap. We'll contact you at <strong>${esc(email)}</strong>, no forms.</p>`}
           </div>
-          <details class="passcode-details">
+          <details class="passcode-details"${accessEnded ? " open" : ""}>
             <summary>Have a collaborator passcode?</summary>
             <form class="gate-form" id="redeem-form" novalidate>
               <label>Passcode<input name="passcode" autocomplete="off" spellcheck="false" /></label>

@@ -97,6 +97,8 @@ nav.top a.locked::after { content: " 🔒"; font-size: .7rem; }
 }
 .locked-panel .passcode-details[open] > summary { margin-bottom: 10px; }
 .locked-panel .gate-form label { color: var(--ink); }
+.locked-panel .gate-btn.secondary { color: var(--ink); border-color: var(--line); }
+.locked-panel .gate-btn.secondary:hover:not(:disabled) { border-color: var(--gold); }
 
 .version-note { text-align: center; font-size: .75rem; color: var(--slate); padding: 18px 16px 40px; }
 

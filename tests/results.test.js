@@ -145,3 +145,16 @@ test("playbook layout: guarded chart calls split by tier; hero and sample script
   assert.ok(publicLib.includes("window.WTCharts =") && publicLib.includes("navToggle") && publicLib.includes("Scroll-in animations"));
   assert.ok(!publicLib.includes("535353") && !publicLib.includes("var to=155") && !publicLib.includes("micro=[47"));
 });
+
+test("access end dates: admin tools are SQL-Editor only and the page reads the end date", async () => {
+  const sql = fs.readFileSync(new URL("../supabase/013_results_access_end_dates.sql", import.meta.url), "utf8");
+  for (const fn of ["results_new_passcode(text, text, date, integer, date, integer)", "results_set_access_until(text, date)",
+    "results_end_access(text)", "results_retire_passcode(text)", "results_restore_passcode(text)",
+    "results_set_passcode_use_by(text, date)", "results_access_report()", "results_set_tier(text, text)"]) {
+    assert.ok(sql.includes(`revoke all on function public.${fn} from public, anon, authenticated;`), `${fn} must not be callable from the website`);
+  }
+  assert.match(sql, /results_effective_tier\(m\.tier, m\.access_until\)/, "storage rules must use the end date");
+  const app = fs.readFileSync(new URL("../results/app.js", import.meta.url), "utf8");
+  assert.match(app, /access_until/, "results page must read the access end date");
+  assert.match(app, /error\.status !== 400/, "results page must still work before the database change is run");
+});
