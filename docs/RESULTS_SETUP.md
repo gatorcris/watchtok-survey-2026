@@ -72,11 +72,40 @@ from results_events e join results_members m using (user_id)
 order by e.created_at desc limit 200;
 ```
 
+**Who has access, and until when** (needs `supabase/013_results_access_end_dates.sql`)
+```sql
+select * from results_access_report();
+```
+
+**One passcode per person** (one use by default; dates are US Eastern, through the end of that day)
+```sql
+select results_new_passcode('Dave - La Touraine', 'LATOUR-7Q4K-X9', access_until => '2026-12-31');
+select results_new_passcode('Mike - DeMarco', 'DEMARCO-22PL-M4', access_days => 30, use_by => '2026-11-30');
+```
+- `access_until` = full access ends on that date; `access_days` = it ends that many days after they use the code. Leave both out for no end date.
+- `use_by` = last day the code itself can be typed in. `max_uses => null` makes it reusable.
+- Codes are stored scrambled. Write each one down when you create it.
+
+**Renew, shorten or end someone's full access**
+```sql
+select results_set_access_until('person@example.com', '2027-01-31');  -- renew or shorten
+select results_set_access_until('person@example.com', null);          -- full access, no end date
+select results_end_access('person@example.com');                      -- ends right now
+```
+When access ends, the person drops back to the free preview and is told when it ended.
+
+**Retire a passcode** (it stops unlocking anything; people who already used it keep their access)
+```sql
+select results_retire_passcode('Founding team');
+select results_restore_passcode('Founding team');                    -- undo
+select results_set_passcode_use_by('Mike - DeMarco', '2026-12-15');   -- change a code's last day
+```
+
 **Give or remove full access by hand**
 ```sql
 select results_set_tier('person@example.com', 'full');    -- or 'sample'
 ```
-(This also unlocks someone who typed a wrong passcode 10 times.)
+(This also unlocks someone who typed a wrong passcode 10 times. Setting 'full' this way removes any end date.)
 
 **Publish a new report version**
 1. Save the latest report page and its `assets/` folder into one folder.
