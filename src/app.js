@@ -1,4 +1,4 @@
-import { ALLOWED_REFERRAL_CODES, SUPPORT_EMAIL } from "./config.js";
+import { ALLOWED_REFERRAL_CODES, SUPPORT_EMAIL, SURVEY_CLOSED } from "./config.js";
 import {
   COMPLETED_STATUS,
   SURVEY_VERSION,
@@ -23,6 +23,7 @@ const app = document.querySelector("#app");
 const query = new URLSearchParams(window.location.search);
 const isTest = ["1", "true", "yes"].includes((query.get("test") || "").toLowerCase());
 const referralFromUrl = normalizeReferral(query.get("ref"), ALLOWED_REFERRAL_CODES);
+const surveyClosed = SURVEY_CLOSED && !isTest;
 const local = loadLocalState(isTest);
 const wordmark = document.querySelector(".wordmark");
 if (isTest && wordmark) wordmark.href = "?test=1";
@@ -322,7 +323,43 @@ function renderComplete() {
     </article>`;
 }
 
+function renderClosed() {
+  const saved = Boolean(state.contactStatus);
+  const formMarkup = saved
+    ? `<p class="contact-status" role="status">${escapeHtml(state.contactStatus)}</p>`
+    : `<form class="contact-form" data-closed-form novalidate>
+        <h2>Hear when 2027 opens</h2>
+        <p>Leave your email and we'll let you know when the 2027 survey opens. We only use it for WatchTok survey news. It is never shared with brands or creators.</p>
+        <label class="email-label">Email address
+          <input type="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com">
+        </label>
+        <label class="consent-option"><input type="checkbox" name="future_research" value="true"> <span>Email me when the 2027 WatchTok survey opens.</span></label>
+        <p class="error" role="alert">${escapeHtml(state.error)}</p>
+        <div class="actions">
+          <span></span>
+          <button class="button button-primary" type="submit">Notify me</button>
+        </div>
+      </form>`;
+  app.innerHTML = `
+    <article class="survey-card">
+      <section class="panel welcome-panel">
+        <p class="eyebrow">Independent, creator-led research</p>
+        <h1>The 2026 WatchTok survey is closed.</h1>
+        <p class="lede">Thank you to everyone who took part. The 2027 survey is being planned.</p>
+        <div class="notice"><strong>Independent research.</strong> No watch brand has sponsored, commissioned, reviewed, or approved this survey.</div>
+        ${formMarkup}
+        <p class="privacy-copy">To request deletion of your email, contact ${escapeHtml(SUPPORT_EMAIL)}. See our <a href="privacy.html">Privacy Statement</a>.</p>
+      </section>
+    </article>`;
+}
+
 function render() {
+  if (surveyClosed) {
+    renderClosed();
+    app.setAttribute("tabindex", "-1");
+    app.focus({ preventScroll: true });
+    return;
+  }
   if (state.view === "welcome") renderWelcome();
   else if (state.view === "question") renderQuestion();
   else if (state.view === "transition") renderTransition();
@@ -413,6 +450,29 @@ app.addEventListener("click", async (event) => {
 
 app.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (event.target.matches("[data-closed-form]")) {
+    const form = new FormData(event.target);
+    const email = String(form.get("email") || "").trim().toLowerCase();
+    state.error = "";
+    if (!/^\S+@\S+\.\S+$/.test(email)) state.error = "Please enter a valid email address.";
+    else if (form.get("future_research") !== "true") state.error = "Please tick the box to confirm you'd like to hear when 2027 opens.";
+    if (state.error) return renderClosed();
+    try {
+      authSession = authSession || await ensureAnonymousSession(false);
+      await submitContactOptIn(authSession, {
+        email,
+        receive_report: false,
+        future_research: true,
+        consented_at: new Date().toISOString()
+      });
+      state.contactStatus = "You're on the list. We'll email you when the 2027 survey opens.";
+    } catch (error) {
+      if (error.status === 409) state.contactStatus = "You're already on the list. We'll email you when the 2027 survey opens.";
+      else state.error = "We couldn't save your email. Please try again.";
+    }
+    return renderClosed();
+  }
+  if (surveyClosed) return;
   if (event.target.matches("[data-contact-form]")) {
     if (isTest) {
       state.error = "Test Mode does not save contact information.";
@@ -473,6 +533,8 @@ app.addEventListener("submit", async (event) => {
 
 async function initialize() {
   render();
+  // Closed: no survey session, no loading or saving of responses.
+  if (surveyClosed) return;
   try {
     authSession = await ensureAnonymousSession(isTest);
     const remote = await loadRemoteResponse(authSession, SURVEY_VERSION, isTest);
