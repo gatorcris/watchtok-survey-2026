@@ -465,9 +465,9 @@ app.addEventListener("submit", async (event) => {
         future_research: true,
         consented_at: new Date().toISOString()
       });
-      state.contactStatus = "You're on the list. We'll email you when the 2027 survey opens.";
+      state.contactStatus = "Almost done. Check your inbox and click the link to confirm your email.";
     } catch (error) {
-      if (error.status === 409) state.contactStatus = "You're already on the list. We'll email you when the 2027 survey opens.";
+      if (error.status === 409) state.contactStatus = "That email is already signed up. If you haven't confirmed it yet, check your inbox for our email.";
       else state.error = "We couldn't save your email. Please try again.";
     }
     return renderClosed();
