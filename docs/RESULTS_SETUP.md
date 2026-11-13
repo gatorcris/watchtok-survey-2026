@@ -159,3 +159,7 @@ Each first-time request emails **watchtoksurvey@gmail.com** from results@watchto
 4. **Test:** in a preview account that hasn't requested yet, tap **Request full access**. The email arrives within a minute.
 
 If no email arrives, check Resend → Logs, and confirm step 2 used the name `resend_api_key` exactly.
+
+## Login / visit tracker
+
+In the SQL Editor: `select * from public.results_login_report();` (everyone) or `select * from public.results_login_report(7);` (active in the last 7 days). Script: `supabase/016_results_login_report.sql`.
