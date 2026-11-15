@@ -696,6 +696,9 @@
   .cs-lesson{margin:26px 0 16px; padding:18px 20px; background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--gold-bright); border-radius:12px;}
   .cs-lesson .cs-kick{display:block; margin-bottom:6px;}
   .cs-lesson p{margin:0; font-size:1rem; line-height:1.6; color:var(--ink);}
+  .cs-lesson-2 h4{font-family:'Fraunces',serif; font-weight:700; font-size:1.2rem; color:var(--ink); margin:14px 0 6px;}
+  .cs-lesson-2 h4:first-of-type{margin-top:4px;}
+  .cs-lesson-2 p + p{margin-top:10px;}
   .cs-play{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px;}
   .cs-play span{font-size:.8rem; font-weight:700; padding:5px 11px; border-radius:99px; border:1px solid var(--line); color:var(--ink-soft);}
   .cs-note{font-size:.84rem; color:var(--slate); border-top:1px solid var(--line); padding-top:12px; margin:0 0 14px;}
