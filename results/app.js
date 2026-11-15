@@ -503,7 +503,7 @@ function buildNav(toc, unlocked) {
   return `
     <nav class="top">
       <div class="inner">
-        <span class="brand">WatchTok Report</span>
+        <span class="brand">2026 WatchTok Report</span>
         <div class="nav-links" id="navLinks">${links}</div>
         <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks">Sections ▾</button>
         <div class="nav-fade" id="navFade"></div>
