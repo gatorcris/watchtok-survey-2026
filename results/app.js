@@ -461,6 +461,36 @@ async function onRequestAccess(event) {
   }
 }
 
+// "Talk to Our Analysts" (Next Steps section, full-access readers only).
+// Records the request and emails the team; if that fails, the link's mailto still opens.
+async function onRequestConsulting(event) {
+  const link = event.currentTarget;
+  if (link.dataset.state === "sent") return event.preventDefault();
+  if (link.dataset.state === "fallback") return; // let the mailto open
+  event.preventDefault();
+  const label = link.textContent;
+  link.setAttribute("aria-disabled", "true");
+  link.textContent = "Sending…";
+  try {
+    const result = await api("/rest/v1/rpc/results_request_consulting", {
+      method: "POST",
+      token: await token(),
+      body: { p_results_version: current.version || null }
+    });
+    link.dataset.state = "sent";
+    const note = document.createElement("p");
+    note.className = "gate-msg ok consult-msg";
+    note.setAttribute("role", "status");
+    note.innerHTML = `Request received. We'll reach out to <strong>${esc(result?.email || current.member.email)}</strong> to scope it.`;
+    (link.closest(".offer-cta") || link.parentElement).replaceWith(note);
+  } catch {
+    link.removeAttribute("aria-disabled");
+    link.textContent = label;
+    link.dataset.state = "fallback";
+    window.location.href = link.getAttribute("href");
+  }
+}
+
 async function signOut() {
   const session = current.session;
   clearSession();
@@ -582,6 +612,7 @@ async function renderReport(notice = "") {
   app.insertAdjacentHTML("beforeend", `<p class="version-note">Results version ${esc((full || sample).version)}</p>`);
 
   app.querySelector("#request-access-btn")?.addEventListener("click", onRequestAccess);
+  if (hasFull) app.querySelectorAll('[data-request="consulting"]').forEach((a) => a.addEventListener("click", onRequestConsulting));
   const redeem = app.querySelector("#redeem-form");
   if (redeem) {
     redeem.addEventListener("submit", onRedeem);

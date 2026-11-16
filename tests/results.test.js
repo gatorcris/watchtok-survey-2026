@@ -158,3 +158,19 @@ test("access end dates: admin tools are SQL-Editor only and the page reads the e
   assert.match(app, /access_until/, "results page must read the access end date");
   assert.match(app, /error\.status !== 400/, "results page must still work before the database change is run");
 });
+
+test("Talk to Our Analysts: full-access only, emails the team, and falls back to email", () => {
+  const sql = fs.readFileSync(new URL("../supabase/017_results_consulting_requests.sql", import.meta.url), "utf8");
+  assert.match(sql, /results_effective_tier\(v_member\.tier, v_member\.access_until\) not in \('full', 'admin'\)/, "only full-access readers may request");
+  assert.ok(sql.includes("revoke all on function public.results_request_consulting(text) from public, anon;"));
+  assert.ok(sql.includes("grant execute on function public.results_request_consulting(text) to authenticated;"));
+  assert.ok(sql.includes("revoke all on function public.results_notify_consulting_request() from public, anon, authenticated;"));
+  assert.match(sql, /'to', jsonb_build_array\('watchtoksurvey@gmail\.com'\)/);
+  assert.match(sql, /interval '1 day'/, "repeat taps must not flood the inbox");
+  const app = fs.readFileSync(new URL("../results/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(hasFull\) app\.querySelectorAll\('\[data-request="consulting"\]'\)/, "button wired for full-access readers only");
+  assert.match(app, /results_request_consulting/);
+  assert.match(app, /window\.location\.href = link\.getAttribute\("href"\)/, "mailto fallback missing");
+  const css = fs.readFileSync(new URL("../results/results.css", import.meta.url), "utf8");
+  assert.match(css, /\.consult-msg/);
+});

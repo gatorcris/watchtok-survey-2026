@@ -730,3 +730,40 @@
   .score div{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
   .score b{display:block; font-family:'Fraunces',serif; font-size:1.05rem; color:var(--ink); margin-bottom:4px;}
   .score span{font-size:.85rem; line-height:1.45; color:var(--ink-soft);}
+
+
+  .next-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:22px 0 18px;}
+  @media (max-width:900px){ .next-grid{grid-template-columns:1fr;} }
+  .next-card{background:var(--card); border:1px solid var(--line); border-top:4px solid var(--gold-bright); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px;}
+  .next-card .nn{font-family:'Fraunces',serif; font-weight:700; font-size:clamp(2.4rem,4vw,3.2rem); line-height:1; color:var(--gold);}
+  .next-card h3{font-family:'Fraunces',serif; font-weight:700; font-size:clamp(1.25rem,2vw,1.5rem); line-height:1.2; color:var(--ink); margin:0;}
+  .next-card p{margin:0; font-size:.95rem; line-height:1.5; color:var(--ink-soft);}
+  .next-card a.nl{margin-top:auto; font-size:.86rem; font-weight:700; color:var(--gold); text-decoration:none;}
+  .next-bridge{font-family:'Fraunces',serif; font-size:clamp(1.15rem,2vw,1.4rem); line-height:1.35; color:var(--ink); margin:6px 0 0; max-width:60ch;}
+  .offer{margin-top:40px; padding:clamp(22px,3.4vw,36px); border-radius:18px; background:var(--navy-panel); border:1px solid color-mix(in srgb, var(--gold-bright) 60%, transparent); box-shadow:var(--shadow); color:#E8ECF4;}
+  .offer .tactic-tag{display:inline-block; font-family:'Space Mono',monospace; font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#0B1220; background:var(--gold-bright); border-radius:99px; padding:4px 10px;}
+  .offer h3{font-family:'Fraunces',serif; font-weight:700; font-size:clamp(1.6rem,3vw,2.2rem); line-height:1.15; color:#F7F3E9; margin:12px 0 8px;}
+  .offer .of-intro{font-size:1rem; line-height:1.55; color:#C9D2E3; margin:0 0 20px; max-width:62ch;}
+  .offer-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px;}
+  @media (max-width:900px){ .offer-grid{grid-template-columns:1fr;} }
+
+  .offer-card{background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:18px;}
+  .offer-card .ol{font-family:'Space Mono',monospace; font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#EFC46D;}
+  .offer-card h4{font-family:'Fraunces',serif; font-weight:700; font-size:1.3rem; color:#F7F3E9; margin:6px 0 8px;}
+  .offer-card p{margin:0; font-size:.93rem; line-height:1.5; color:#DDE3EF;}
+  .offer-cta{display:flex; flex-wrap:wrap; align-items:center; gap:14px 20px; margin-top:24px;}
+  .offer-cta a.btn{display:inline-block; padding:13px 22px; border-radius:99px; background:#EFC46D; color:#0B1220; font-weight:800; font-size:.95rem; text-decoration:none;}
+  .offer-cta a.btn:focus-visible{outline:3px solid #fff; outline-offset:3px;}
+  .offer-cta span{font-size:.88rem; color:#C9D2E3;}
+  .offer-note{margin:18px 0 0; padding-top:14px; border-top:1px solid rgba(255,255,255,.14); font-size:.82rem; color:#9FB0CB;}
+  
+  .offer{background:linear-gradient(135deg,#C9962E 0%,#E8C170 100%); border:none; color:#10192E;}
+  .offer h3,.offer-card h4{color:#10192E;}
+  .offer .of-intro,.offer-cta span,.offer-card p{color:#22252B;}
+  .offer .tactic-tag{background:#10192E; color:#EFC46D;}
+  .offer-card{background:rgba(255,255,255,.35); border:1px solid rgba(16,25,46,.18);}
+  .offer-card .ol{color:#5A4205;}
+  .offer-cta a.btn{background:#10192E; color:#EFC46D;}
+  .offer-cta a.btn:focus-visible{outline-color:#10192E;}
+  .offer{position:relative; overflow:hidden; isolation:isolate;}
+  .offer::before{content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.08; background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201000%20420%22%20preserveAspectRatio%3D%22none%22%3E%3Cline%20x1%3D%220%22%20y1%3D%22100%22%20x2%3D%221000%22%20y2%3D%22100%22%20stroke%3D%22%2310192E%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%2010%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22200%22%20x2%3D%221000%22%20y2%3D%22200%22%20stroke%3D%22%2310192E%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%2010%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%22300%22%20x2%3D%221000%22%20y2%3D%22300%22%20stroke%3D%22%2310192E%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%226%2010%22%2F%3E%3Crect%20x%3D%2220.0%22%20y%3D%22360%22%20width%3D%2246%22%20height%3D%2260%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%2290.3%22%20y%3D%22335%22%20width%3D%2246%22%20height%3D%2285%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22160.6%22%20y%3D%22345%22%20width%3D%2246%22%20height%3D%2275%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22230.9%22%20y%3D%22310%22%20width%3D%2246%22%20height%3D%22110%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22301.2%22%20y%3D%22285%22%20width%3D%2246%22%20height%3D%22135%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22371.5%22%20y%3D%22300%22%20width%3D%2246%22%20height%3D%22120%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22441.8%22%20y%3D%22260%22%20width%3D%2246%22%20height%3D%22160%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22512.2%22%20y%3D%22230%22%20width%3D%2246%22%20height%3D%22190%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22582.5%22%20y%3D%22245%22%20width%3D%2246%22%20height%3D%22175%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22652.8%22%20y%3D%22195%22%20width%3D%2246%22%20height%3D%22225%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22723.1%22%20y%3D%22165%22%20width%3D%2246%22%20height%3D%22255%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22793.4%22%20y%3D%22180%22%20width%3D%2246%22%20height%3D%22240%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22863.7%22%20y%3D%22130%22%20width%3D%2246%22%20height%3D%22290%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Crect%20x%3D%22934.0%22%20y%3D%2290%22%20width%3D%2246%22%20height%3D%22330%22%20rx%3D%226%22%20fill%3D%22%2310192E%22%2F%3E%3Cpolyline%20fill%3D%22none%22%20stroke%3D%22%2310192E%22%20vector-effect%3D%22non-scaling-stroke%22%20stroke-width%3D%224%22%20stroke-linejoin%3D%22round%22%20points%3D%2243.0%2C320%20113.3%2C295%20183.6%2C305%20253.9%2C270%20324.2%2C245%20394.5%2C260%20464.8%2C220%20535.2%2C190%20605.5%2C205%20675.8%2C155%20746.1%2C125%20816.4%2C140%20886.7%2C90%20957.0%2C50%22%2F%3E%3C%2Fsvg%3E") right bottom / 135% 119% no-repeat;}
