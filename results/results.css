@@ -121,3 +121,6 @@ nav.top a.locked::after { content: " 🔒"; font-size: .7rem; }
 .locked-panel .gate-fine { color: var(--slate); }
 .locked-panel .gate-fine strong { color: var(--ink-soft); }
 .locked-panel .gate-fine a { color: var(--gold); text-decoration: underline; }
+
+/* "Talk to Our Analysts" confirmation, shown in place of the button inside the report's offer box */
+.offer .consult-msg { margin-top: 24px; font-size: .95rem; background: #E6F2EA; color: #1F5A36; }
