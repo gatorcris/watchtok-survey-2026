@@ -97,7 +97,9 @@ export function splitReport(html, { version = "draft", sampleSections = SAMPLE_S
   const bundles = {};
   for (const tier of ["sample", "full"]) {
     const own = sections.filter((s) => s.tier === tier);
-    const htmlParts = tier === "sample" ? [hero, ...own.map((s) => s.html)] : [...own.map((s) => s.html), footer];
+    // The footer (contact, independence note, copyright) goes in the sample bundle,
+    // which every signed-in reader loads, so preview readers see it too.
+    const htmlParts = tier === "sample" ? [hero, ...own.map((s) => s.html), footer] : own.map((s) => s.html);
     const chartJs = chartsByTier[tier].join("\n\n");
     bundles[tier] = {
       tier,

@@ -377,6 +377,10 @@
     padding:40px 0 60px; border-top:1px solid var(--line);
   }
   footer p{font-size:.78rem; color:var(--slate); max-width:80ch;}
+  footer p + p{margin-top:8px;}
+  footer .foot-contact{margin-top:14px; padding-top:14px; border-top:1px solid var(--line); color:var(--ink-soft);}
+  footer a{color:var(--gold); text-decoration:none; font-weight:600;}
+  footer a:hover{text-decoration:underline;}
 
   
   .appendix-divider{display:flex; align-items:center; gap:14px;}
