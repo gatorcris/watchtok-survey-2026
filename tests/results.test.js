@@ -45,7 +45,8 @@ test("sample bundle holds only sample sections, charts, and the full table of co
 test("full bundle holds locked sections, their charts, and images from both tiers", () => {
   const { bundles } = splitReport(page, { version: "T1" });
   assert.deepEqual(bundles.full.sections.map((s) => s.id), ["price"]);
-  assert.ok(bundles.full.html.includes("PRICE-SECRET") && bundles.full.html.includes("Foot"));
+  assert.ok(bundles.full.html.includes("PRICE-SECRET") && !bundles.full.html.includes("Foot"));
+  assert.ok(bundles.sample.html.includes("Foot"), "footer (copyright, contact) must reach preview readers");
   assert.ok(bundles.full.charts.includes("424242"));
   assert.deepEqual(bundles.full.assets.sort(), ["full/assets/secret.png", "sample/assets/shared.jpg"]);
 });
