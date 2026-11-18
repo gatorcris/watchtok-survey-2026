@@ -178,7 +178,7 @@ function renderGate(mode = "register", notice = "", kind = "ok") {
         <form class="gate-form" id="register-form" novalidate>
           <label>Full name<input name="full_name" autocomplete="name" required maxlength="120" /></label>
           <label>Email<input name="email" type="email" autocomplete="email" required /></label>
-          <label>Password <span class="hint">At least 8 characters</span><input name="password" type="password" autocomplete="new-password" minlength="8" required /></label>
+          <label>Password <span class="hint">At least 10 characters</span><input name="password" type="password" autocomplete="new-password" minlength="10" required /></label>
           <label>Brand or organization <span class="hint">Optional</span><input name="organization" autocomplete="organization" maxlength="160" /></label>
           <label>I am a…<select name="member_type" required>${memberTypeOptions()}</select></label>
           <label>Collaborator passcode <span class="hint">Only if you were given one</span><input name="passcode" autocomplete="off" autocapitalize="characters" spellcheck="false" /></label>
@@ -232,8 +232,8 @@ function renderNewPassword(notice = "") {
         ${brandBlock()}
         <h1 id="gate-title">Choose a new password</h1>
         <form class="gate-form" id="newpw-form" novalidate>
-          <label>New password <span class="hint">At least 8 characters</span><input name="password" type="password" autocomplete="new-password" minlength="8" required /></label>
-          <label>Type it again<input name="password2" type="password" autocomplete="new-password" minlength="8" required /></label>
+          <label>New password <span class="hint">At least 10 characters</span><input name="password" type="password" autocomplete="new-password" minlength="10" required /></label>
+          <label>Type it again<input name="password2" type="password" autocomplete="new-password" minlength="10" required /></label>
           <button class="gate-btn" type="submit">Save password</button>
         </form>
       </section>
@@ -308,7 +308,7 @@ async function onRegister(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const v = readForm(form);
-  const problem = missingProfileField(v) || (!/^\S+@\S+\.\S+$/.test(v.email) ? "Please enter a valid email." : "") || (v.password.length < 8 ? "Please use a password of at least 10 characters." : "");
+  const problem = missingProfileField(v) || (!/^\S+@\S+\.\S+$/.test(v.email) ? "Please enter a valid email." : "") || (v.password.length < 10 ? "Please use a password of at least 10 characters." : "");
   if (problem) return showMsg(form, problem);
 
   setBusy(form, true);
@@ -368,7 +368,7 @@ async function onNewPassword(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const v = readForm(form);
-  if (v.password.length < 8) return showMsg(form, "Please use a password of at least 10 characters.");
+  if (v.password.length < 10) return showMsg(form, "Please use a password of at least 10 characters.");
   if (v.password !== v.password2) return showMsg(form, "The two passwords don't match.");
   setBusy(form, true);
   try {
