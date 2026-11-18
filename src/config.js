@@ -10,5 +10,11 @@ export const ALLOWED_REFERRAL_CODES = [];
 // Test mode (?test=1) still opens the survey for development; test responses never count.
 export const SURVEY_CLOSED = true;
 
+// Paid checkout (Stripe). While false, the buy panel shows only with ?buy=1 (testing);
+// everyone else keeps the "Request full access" button. Flip to true on launch day.
+export const CHECKOUT_LIVE = false;
+// Must match TERMS_VERSION in supabase/functions/create-checkout and the version on terms.html.
+export const TERMS_VERSION = "2026-11-18";
+
 export const PRIVACY_VERSION = "V9-final-candidate";
 export const SUPPORT_EMAIL = "watchtoksurvey@gmail.com";

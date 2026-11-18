@@ -3,7 +3,7 @@
 // Deployed with JWT verification ON (only signed-in users can call it).
 import { db, SB_URL, stripe } from "../_shared/util.ts";
 
-const TERMS_VERSION = "2026-11-draft4";
+const TERMS_VERSION = "2026-11-18"; // must match src/config.js and terms.html
 const PRICE_CENTS = 129900;
 const LOOKUP_KEY = "watchtok-2026-report-1299";
 const TAX_CODE = "txcd_10701410";
