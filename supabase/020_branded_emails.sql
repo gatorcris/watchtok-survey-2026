@@ -164,7 +164,7 @@ begin
           '<table cellpadding="5" style="font:400 14px Arial,Helvetica,sans-serif;color:#22252B">'
           || '<tr><td><b>Buyer name</b></td><td>' || v_name || '</td></tr>'
           || '<tr><td><b>Buyer email</b></td><td>' || v_email || '</td></tr>'
-          || '<tr><td><b>Brand</b></td><td>' || coalesce(public.wt_esc(new.brand_name) || ' (company license)', '— (personal license)') || '</td></tr>'
+          || '<tr><td><b>Brand</b></td><td>' || case when new.brand_name is null then '— (personal license)' else public.wt_esc(new.brand_name) || ' (company license)' end || '</td></tr>'
           || '<tr><td><b>Code</b></td><td>' || v_code || '</td></tr>'
           || '<tr><td><b>Referred by</b></td><td>' || coalesce(public.wt_esc(new.referrer_label), '—') || '</td></tr>'
           || '<tr><td><b>Collected</b></td><td>' || to_char((coalesce(new.amount_total,0) - coalesce(new.amount_tax,0)) / 100.0, 'FM$999,990.00') || ' ' || upper(coalesce(new.currency, 'usd')) || ' before tax</td></tr>'
