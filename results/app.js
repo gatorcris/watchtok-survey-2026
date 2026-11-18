@@ -629,9 +629,17 @@ async function afterCheckout() {
   history.replaceState(null, "", RETURN_URL);
   if (result === "cancel") return "Checkout canceled. Nothing was charged.";
   app.innerHTML = `<div class="gate-shell"><section class="gate-card">${brandBlock()}<h1>Payment received</h1><p class="gate-loading">Unlocking your full report…</p></section></div>`;
+  const started = Date.now();
   for (let i = 0; i < 15; i += 1) {
     const m = await loadMember();
-    if (m && (m.tier === "full" || m.tier === "admin")) return "";
+    if (m && (m.tier === "full" || m.tier === "admin")) {
+      const until = m.access_until ? accessDay(m.access_until) : "";
+      app.querySelector(".gate-loading").textContent =
+        `You're all set. Full access${until ? ` runs through ${until}` : " is on"}. A welcome email and your Stripe receipt are on their way.`;
+      // Keep this confirmation on screen for at least 4 seconds before opening the report.
+      await new Promise((r) => setTimeout(r, Math.max(4000, 6000 - (Date.now() - started))));
+      return "";
+    }
     await new Promise((r) => setTimeout(r, 2000));
   }
   return `Your payment went through, but unlocking is taking longer than usual. Reload in a minute; if it's still locked, email ${SUPPORT_EMAIL} and we'll fix it right away.`;
