@@ -2,7 +2,7 @@
 // Security lives in Supabase (row-level security + private storage). This file only
 // asks for content; the database decides what each account may receive.
 
-import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, SUPPORT_EMAIL } from "../src/config.js";
+import { CHECKOUT_LIVE, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, SUPPORT_EMAIL, TERMS_VERSION } from "../src/config.js";
 
 // Kept separate from the survey's anonymous session so the two never mix.
 const AUTH_KEY = "watchtok-results-auth-v1";
@@ -29,7 +29,7 @@ function friendlyError(error) {
   const msg = error?.message || "Something went wrong.";
   if (/invalid login credentials/i.test(msg)) return "That email and password don't match an account.";
   if (/already registered|already been registered/i.test(msg)) return "An account with that email already exists. Try signing in.";
-  if (/password should be at least/i.test(msg)) return "Please use a password of at least 8 characters.";
+  if (/password should be at least/i.test(msg)) return "Please use a password of at least 10 characters.";
   if (/email not confirmed/i.test(msg)) return "Please confirm your email first, then sign in.";
   if (/rate limit/i.test(msg)) return "Too many attempts. Please wait a few minutes and try again.";
   if (/failed to fetch|network/i.test(msg)) return "Can't reach the server. Check your connection and try again.";
@@ -307,7 +307,7 @@ async function onRegister(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const v = readForm(form);
-  const problem = missingProfileField(v) || (!/^\S+@\S+\.\S+$/.test(v.email) ? "Please enter a valid email." : "") || (v.password.length < 8 ? "Please use a password of at least 8 characters." : "");
+  const problem = missingProfileField(v) || (!/^\S+@\S+\.\S+$/.test(v.email) ? "Please enter a valid email." : "") || (v.password.length < 8 ? "Please use a password of at least 10 characters." : "");
   if (problem) return showMsg(form, problem);
 
   setBusy(form, true);
@@ -367,7 +367,7 @@ async function onNewPassword(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const v = readForm(form);
-  if (v.password.length < 8) return showMsg(form, "Please use a password of at least 8 characters.");
+  if (v.password.length < 8) return showMsg(form, "Please use a password of at least 10 characters.");
   if (v.password !== v.password2) return showMsg(form, "The two passwords don't match.");
   setBusy(form, true);
   try {
@@ -541,6 +541,117 @@ function buildNav(toc, unlocked) {
     </nav>`;
 }
 
+// ------------------------------------------------------------------ paid checkout
+
+const BUY_KEY = "watchtok-results-buy";
+function checkoutOn() {
+  if (CHECKOUT_LIVE) return true;
+  const q = new URLSearchParams(location.search);
+  try {
+    if (q.get("buy") === "1") sessionStorage.setItem(BUY_KEY, "1");
+    return sessionStorage.getItem(BUY_KEY) === "1";
+  } catch { return q.get("buy") === "1"; }
+}
+
+// TikTok, Instagram and Facebook open links in their own browsers, where sign-in links and
+// Apple Pay often fail. Suggest the phone's real browser before paying.
+function inAppBrowser() {
+  return /BytedanceWebview|musical_ly|TikTok|Instagram|FBAN|FBAV/i.test(navigator.userAgent || "");
+}
+
+function buyBlock(email) {
+  return `
+    <div class="buy-box">
+      <p class="price-line"><span class="price">$1,299</span> <span class="price-note">+ applicable tax · one-time payment</span></p>
+      <ul class="buy-facts">
+        <li>12 months of full online access, starting right away</li>
+        <li>No subscription and no automatic renewal</li>
+        <li>For a brand: up to 3 people at your company, each with their own sign-in</li>
+      </ul>
+      ${inAppBrowser() ? `<p class="gate-msg warn" role="note">You're in an in-app browser. For a smooth checkout, tap <strong>•••</strong> and choose <strong>Open in browser</strong> first.</p>` : ""}
+      <form class="gate-form buy-form" id="buy-form" novalidate>
+        <label><span>Brand or company name <span class="optional">(optional)</span></span>
+          <input name="brand_name" maxlength="160" autocomplete="organization" placeholder="Leave blank if buying for yourself" />
+        </label>
+        <label><span>Code <span class="optional">(optional)</span></span>
+          <input name="code" maxlength="40" autocomplete="off" spellcheck="false" autocapitalize="characters" />
+        </label>
+        <label class="check-row">
+          <input type="checkbox" name="terms" value="yes" />
+          <span>I agree to the <a href="../terms.html" target="_blank" rel="noopener">Terms of Sale &amp; License</a> for myself or, if I named a brand above, on behalf of that brand. I ask for access to start right away, and I understand that once it starts I can't cancel or get a refund.</span>
+        </label>
+        <button class="gate-btn access-btn" type="submit">Continue to secure checkout</button>
+        <p class="gate-fine">Paid by card through Stripe, our payment provider. You'll be buying as <strong>${esc(email)}</strong>; the receipt goes there.</p>
+      </form>
+    </div>`;
+}
+
+const BUY_ERRORS = {
+  terms: "Please tick the box to agree to the terms.",
+  code_invalid: "That code isn't valid. Check it, or leave the box empty.",
+  code_used: "That code has already been used.",
+  code_in_use: "That code is being used in another checkout right now. Try again in 30 minutes, or leave it empty.",
+  already_has_access: "You already have full access. Reload the page to see the full report.",
+  sign_in: "Please sign in again, then try once more.",
+  register: "Please finish your profile first."
+};
+
+async function onBuy(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const v = readForm(form);
+  if (!form.terms.checked) return showMsg(form, BUY_ERRORS.terms);
+  setBusy(form, true);
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${await token()}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ brand_name: v.brand_name, code: v.code, terms_accepted: true, terms_version: TERMS_VERSION })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok && data.url) {
+      location.assign(data.url);
+      return;
+    }
+    showMsg(form, BUY_ERRORS[data.error] || `Checkout couldn't start. Please try again, or email ${SUPPORT_EMAIL}.`);
+  } catch (error) {
+    showMsg(form, friendlyError(error));
+  }
+  setBusy(form, false);
+}
+
+// Back from Stripe: the payment message reaches our server separately, usually within seconds.
+async function afterCheckout() {
+  const q = new URLSearchParams(location.search);
+  const result = q.get("checkout");
+  if (!result) return "";
+  history.replaceState(null, "", RETURN_URL);
+  if (result === "cancel") return "Checkout canceled. Nothing was charged.";
+  app.innerHTML = `<div class="gate-shell"><section class="gate-card">${brandBlock()}<h1>Payment received</h1><p class="gate-loading">Unlocking your full report…</p></section></div>`;
+  for (let i = 0; i < 15; i += 1) {
+    const m = await loadMember();
+    if (m && (m.tier === "full" || m.tier === "admin")) return "";
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  return `Your payment went through, but unlocking is taking longer than usual. Reload in a minute; if it's still locked, email ${SUPPORT_EMAIL} and we'll fix it right away.`;
+}
+
+// Reader watermark: the signed-in email, faint and repeated, on full-report pages.
+function addWatermark(email) {
+  document.querySelector(".reader-watermark")?.remove();
+  const text = String(email).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[c]);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="220"><text x="20" y="130" transform="rotate(-24 210 110)" font-family="Arial, sans-serif" font-size="15" fill="#7F8A99" fill-opacity="0.13">${text}</text></svg>`;
+  const el = document.createElement("div");
+  el.className = "reader-watermark";
+  el.setAttribute("aria-hidden", "true");
+  el.style.backgroundImage = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+  document.body.appendChild(el);
+  const tag = document.createElement("p");
+  tag.className = "reader-licensed";
+  tag.textContent = `Licensed to ${email}. Please don't share.`;
+  app.appendChild(tag);
+}
+
 function lockedPanel(toc, unlocked, request) {
   const locked = toc.filter((s) => !unlocked.has(s.id));
   if (!locked.length) return "";
@@ -549,7 +660,8 @@ function lockedPanel(toc, unlocked, request) {
     ? `Your full access ended on ${accessDay(accessUntil)}`
     : "There's more behind this preview";
   const lead = accessEnded
-    ? "You're back on the free preview. Request full access again, or enter a new passcode. Full access includes:"
+    ? (checkoutOn() ? "You're back on the free preview. Buy full access again below. Full access includes:"
+      : "You're back on the free preview. Request full access again, or enter a new passcode. Full access includes:")
     : "Full access adds:";
   return `
     <section class="locked-panel" id="locked">
@@ -559,11 +671,12 @@ function lockedPanel(toc, unlocked, request) {
           <h2 class="section-title">${esc(heading)}</h2>
           <p class="lead-text">${lead}</p>
           <ul>${locked.map((s) => `<li>${esc(s.title)}</li>`).join("")}</ul>
+          ${checkoutOn() ? buyBlock(email) : `
           <div class="access-request">
             ${request ? requestedNote(email) : `
             <button class="gate-btn access-btn" type="button" id="request-access-btn">Request full access</button>
             <p class="gate-fine">One tap. We'll contact you at <strong>${esc(email)}</strong>, no forms.</p>`}
-          </div>
+          </div>`}
           <details class="passcode-details"${accessEnded ? " open" : ""}>
             <summary>Have a collaborator passcode?</summary>
             <form class="gate-form" id="redeem-form" novalidate>
@@ -612,7 +725,12 @@ async function renderReport(notice = "") {
   app.insertAdjacentHTML("beforeend", `<p class="version-note">Results version ${esc((full || sample).version)}</p>`);
 
   app.querySelector("#request-access-btn")?.addEventListener("click", onRequestAccess);
+  app.querySelector("#buy-form")?.addEventListener("submit", onBuy);
+  if (hasFull && full) addWatermark(current.member.email);
   if (hasFull) app.querySelectorAll('[data-request="consulting"]').forEach((a) => a.addEventListener("click", onRequestConsulting));
+  const buy = app.querySelector("#buy-form");
+  if (buy && current.buyNotice) showMsg(buy, current.buyNotice, /canceled/.test(current.buyNotice) ? "ok" : "error");
+  current.buyNotice = "";
   const redeem = app.querySelector("#redeem-form");
   if (redeem) {
     redeem.addEventListener("submit", onRedeem);
@@ -640,6 +758,7 @@ async function renderReport(notice = "") {
 
 async function enter(notice = "") {
   try {
+    current.buyNotice = await afterCheckout();
     const member = await loadMember();
     if (!member) return renderProfileForm(notice);
     await renderReport(notice);
@@ -691,6 +810,7 @@ async function handleAuthRedirect() {
   // report-lib.js is deferred; make sure it has run before drawing.
   if (document.readyState === "loading") await new Promise((r) => document.addEventListener("DOMContentLoaded", r, { once: true }));
   captureRef();
+  checkoutOn(); // remember ?buy=1 for this tab before any redirect cleans the address
   if (await handleAuthRedirect()) return;
   const session = await validSession();
   if (session) await enter();
