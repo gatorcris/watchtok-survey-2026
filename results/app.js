@@ -161,6 +161,7 @@ function showMsg(form, text, kind = "error") {
 
 function renderGate(mode = "register", notice = "", kind = "ok") {
   bar.hidden = true;
+  document.querySelector(".reader-watermark")?.remove();
   if (mode === "forgot") return renderForgot(notice, kind);
   const isRegister = mode === "register";
   app.innerHTML = `

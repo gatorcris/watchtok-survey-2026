@@ -144,3 +144,6 @@ nav.top a.locked::after { content: " 🔒"; font-size: .7rem; }
 .reader-watermark { position: fixed; inset: 0; z-index: 30; pointer-events: none; background-repeat: repeat; }
 .reader-licensed { text-align: center; font-size: .75rem; color: var(--slate); margin: 12px 0 28px; }
 @media print { .reader-watermark { position: fixed; } }
+
+/* Keep the account bar hidden when signed out (display rules otherwise override [hidden]). */
+#account-bar[hidden] { display: none !important; }
