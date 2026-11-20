@@ -465,7 +465,7 @@ app.addEventListener("submit", async (event) => {
         future_research: true,
         consented_at: new Date().toISOString()
       });
-      state.contactStatus = "Almost done. Check your inbox and click the link to confirm your email.";
+      state.contactStatus = "Almost done. Check your inbox and click the link to confirm your email (it may be in your Updates or Spam folder).";
     } catch (error) {
       if (error.status === 409) state.contactStatus = "That email is already signed up. If you haven't confirmed it yet, check your inbox for our email.";
       else state.error = "We couldn't save your email. Please try again.";

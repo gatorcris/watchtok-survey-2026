@@ -214,7 +214,7 @@ function renderForgot(notice = "", kind = "ok") {
           <button class="gate-btn" type="submit">Send reset link</button>
           <button class="gate-btn secondary" type="button" id="back-signin">Back to sign in</button>
         </form>
-        <p class="gate-fine">No email after a few minutes? Check your spam folder, or write to <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>
+        <p class="gate-fine">No email after a few minutes? Check your Updates or Spam folder, or write to <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>
       </section>
     </div>`;
   const form = app.querySelector("form");
@@ -320,7 +320,7 @@ async function onRegister(event) {
     if (!result?.access_token) {
       setBusy(form, false);
       const pc = v.passcode ? " If you have a collaborator passcode, you'll enter it after confirming." : "";
-      renderGate("signin", `Almost there. We sent a confirmation link to ${v.email}. Click it to open the results (check spam if you don't see it).${pc}`);
+      renderGate("signin", `Almost there. We sent a confirmation link to ${v.email}. Click it to open the results. Not in your inbox? Check your Updates or Spam folder.${pc}`);
       return;
     }
     saveSession(result);
