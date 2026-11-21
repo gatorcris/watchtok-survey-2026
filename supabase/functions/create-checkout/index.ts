@@ -3,7 +3,9 @@
 // Deployed with JWT verification ON (only signed-in users can call it).
 import { db, SB_URL, stripe } from "../_shared/util.ts";
 
-const TERMS_VERSION = "2026-11-18"; // must match src/config.js and terms.html
+const TERMS_VERSION = "2026-11-21"; // must match src/config.js and terms.html
+// Older versions still accepted for pages loaded before an update.
+const ACCEPTED_TERMS = [TERMS_VERSION, "2026-11-18"];
 const PRICE_CENTS = 129900;
 const LOOKUP_KEY = "watchtok-2026-report-1299";
 const TAX_CODE = "txcd_10701410";
@@ -73,7 +75,7 @@ Deno.serve(async (req) => {
     if (tierNow !== "sample") return reply(409, { error: "already_has_access" });
 
     const body = await req.json().catch(() => ({}));
-    if (body.terms_accepted !== true || body.terms_version !== TERMS_VERSION) {
+    if (body.terms_accepted !== true || !ACCEPTED_TERMS.includes(body.terms_version)) {
       return reply(400, { error: "terms" });
     }
     const brand = typeof body.brand_name === "string" ? body.brand_name.trim().slice(0, 160) : "";
@@ -108,7 +110,7 @@ Deno.serve(async (req) => {
         code: codeRow ? code : null,
         code_kind: codeRow?.kind ?? null,
         referrer_label: codeRow?.member_label ?? null,
-        terms_version: TERMS_VERSION,
+        terms_version: body.terms_version,
         terms_accepted_at: new Date().toISOString(),
       }),
     });

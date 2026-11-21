@@ -582,7 +582,7 @@ function buyBlock(email) {
           <span>I agree to the <a href="../terms.html" target="_blank" rel="noopener">Terms of Sale &amp; License</a> for myself or, if I named a brand above, on behalf of that brand. I ask for access to start right away, and I understand that once it starts I can't cancel or get a refund.</span>
         </label>
         <button class="gate-btn access-btn" type="submit">Continue to secure checkout</button>
-        <p class="gate-fine">Paid by card through Stripe, our payment provider. You'll be buying as <strong>${esc(email)}</strong>; the receipt goes there.</p>
+        <p class="gate-fine">Payment is handled by Link, Stripe's checkout service; your card statement will show LINK.COM* WATCHTOK SUR. You'll be buying as <strong>${esc(email)}</strong>; the receipt goes there.</p>
       </form>
     </div>`;
 }
@@ -635,7 +635,7 @@ async function afterCheckout() {
     if (m && (m.tier === "full" || m.tier === "admin")) {
       const until = m.accessUntil ? accessDay(m.accessUntil) : "";
       app.querySelector(".gate-loading").textContent =
-        `You're all set. Full access${until ? ` runs through ${until}` : " is on"}. A welcome email and your Stripe receipt are on their way.`;
+        `You're all set. Full access${until ? ` runs through ${until}` : " is on"}. A welcome email and your receipt from Link are on their way.`;
       // Keep this confirmation on screen for at least 4 seconds before opening the report.
       await new Promise((r) => setTimeout(r, Math.max(4000, 6000 - (Date.now() - started))));
       return "";
