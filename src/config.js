@@ -14,7 +14,7 @@ export const SURVEY_CLOSED = true;
 // everyone else keeps the "Request full access" button. Flip to true on launch day.
 export const CHECKOUT_LIVE = false;
 // Must match TERMS_VERSION in supabase/functions/create-checkout and the version on terms.html.
-export const TERMS_VERSION = "2026-11-18";
+export const TERMS_VERSION = "2026-11-21";
 
 export const PRIVACY_VERSION = "V9-final-candidate";
 export const SUPPORT_EMAIL = "watchtoksurvey@gmail.com";
