@@ -583,6 +583,7 @@ function buyBlock(email) {
         <label><span>Discount or referral code <span class="optional">(optional)</span></span>
           <input name="code" maxlength="40" autocomplete="off" spellcheck="false" autocapitalize="characters" />
         </label>
+        <p class="code-note" id="code-note" aria-live="polite">No code: you'll pay $1,299 + applicable tax.</p>
         <label class="check-row">
           <input type="checkbox" name="terms" value="yes" />
           <span>I agree to the <a href="../terms.html" target="_blank" rel="noopener">Terms of Sale &amp; License</a> for myself or, if I named a brand above, on behalf of that brand. I ask for access to start right away, and I understand that once it starts I can't cancel or get a refund.</span>
@@ -602,6 +603,37 @@ const BUY_ERRORS = {
   sign_in: "Please sign in again, then try once more.",
   register: "Please finish your profile first."
 };
+
+// Shows, before checkout, whether the code was recognized and what the buyer will pay.
+let codeTimer = 0;
+function money(cents) {
+  return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 });
+}
+function onCodeInput(event) {
+  const note = document.getElementById("code-note");
+  if (!note) return;
+  const code = event.target.value.trim().toUpperCase();
+  clearTimeout(codeTimer);
+  note.className = "code-note";
+  if (!code) { note.textContent = "No code: you'll pay $1,299 + applicable tax."; return; }
+  note.textContent = "Checking code…";
+  codeTimer = setTimeout(async () => {
+    try {
+      const r = await api("/rest/v1/rpc/results_code_preview", { method: "POST", token: await token(), body: { p_code: code } });
+      if (event.target.value.trim().toUpperCase() !== code) return;
+      if (r?.ok && r.kind === "discount" && r.off_cents > 0) {
+        note.className = "code-note good";
+        note.textContent = `✓ Code ${code}: ${money(r.off_cents)} off. You'll pay ${money(129900 - r.off_cents)} + applicable tax.`;
+      } else if (r?.ok) {
+        note.className = "code-note good";
+        note.textContent = `✓ Code ${code} recorded. You'll pay $1,299 + applicable tax.`;
+      } else {
+        note.className = "code-note bad";
+        note.textContent = r?.reason === "used" ? `Code ${code} has already been used.` : `We don't recognize code ${code}. Check it, or leave the box empty.`;
+      }
+    } catch { note.textContent = ""; }
+  }, 450);
+}
 
 async function onBuy(event) {
   event.preventDefault();
@@ -741,6 +773,7 @@ async function renderReport(notice = "") {
 
   app.querySelector("#request-access-btn")?.addEventListener("click", onRequestAccess);
   app.querySelector("#buy-form")?.addEventListener("submit", onBuy);
+  app.querySelector('#buy-form input[name="code"]')?.addEventListener("input", onCodeInput);
   if (hasFull && full) addWatermark(current.member.email);
   if (hasFull) app.querySelectorAll('[data-request="consulting"]').forEach((a) => a.addEventListener("click", onRequestConsulting));
   const buy = app.querySelector("#buy-form");

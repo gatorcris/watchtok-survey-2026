@@ -155,3 +155,10 @@ nav.top a.locked::after { content: " 🔒"; font-size: .7rem; }
 
 /* Keep the account bar hidden when signed out (display rules otherwise override [hidden]). */
 #account-bar[hidden] { display: none !important; }
+
+/* Buy box: code confirmation, and readable "Payment received" text on the white card */
+.code-note { font-size: .85rem; margin: -4px 0 4px; color: var(--slate, #6B7280); }
+.code-note.good { color: var(--ink, #111827); font-weight: 600; }
+.code-note.good::first-letter { color: var(--gold, #B8860B); }
+.code-note.bad { color: #D9534F; font-weight: 600; }
+.gate-card .gate-loading { color: #4A4E57; }
