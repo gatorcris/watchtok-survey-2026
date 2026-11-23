@@ -574,7 +574,7 @@ function buyBlock(email) {
         <label><span>Brand or company name <span class="optional">(optional)</span></span>
           <input name="brand_name" maxlength="160" autocomplete="organization" placeholder="Leave blank if buying for yourself" />
         </label>
-        <label><span>Code <span class="optional">(optional)</span></span>
+        <label><span>Discount or referral code <span class="optional">(optional)</span></span>
           <input name="code" maxlength="40" autocomplete="off" spellcheck="false" autocapitalize="characters" />
         </label>
         <label class="check-row">
@@ -670,7 +670,7 @@ function lockedPanel(toc, unlocked, request) {
     : "There's more behind this preview";
   const lead = accessEnded
     ? (checkoutOn() ? "You're back on the free preview. Buy full access again below. Full access includes:"
-      : "You're back on the free preview. Request full access again, or enter a new passcode. Full access includes:")
+      : "You're back on the free preview. Request full access again, or use an access code. Full access includes:")
     : "Full access adds:";
   return `
     <section class="locked-panel" id="locked">
@@ -686,14 +686,14 @@ function lockedPanel(toc, unlocked, request) {
             <button class="gate-btn access-btn" type="button" id="request-access-btn">Request full access</button>
             <p class="gate-fine">One tap. We'll contact you at <strong>${esc(email)}</strong>, no forms.</p>`}
           </div>`}
-          <details class="passcode-details"${accessEnded ? " open" : ""}>
-            <summary>Have a collaborator passcode?</summary>
+          <p class="gate-fine">Questions: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
+          <details class="passcode-details">
+            <summary>${checkoutOn() ? "Partner or Founding Member? Enter your access code" : "Have a collaborator passcode?"}</summary>
             <form class="gate-form" id="redeem-form" novalidate>
-              <label>Passcode<input name="passcode" autocomplete="off" spellcheck="false" /></label>
-              <button class="gate-btn secondary" type="submit">Unlock full report</button>
+              <label>Access code<input name="passcode" autocomplete="off" spellcheck="false" /></label>
+              <button class="gate-btn secondary" type="submit">Use access code</button>
             </form>
           </details>
-          <p class="gate-fine">Questions: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
         </div>
       </div>
     </section>`;
