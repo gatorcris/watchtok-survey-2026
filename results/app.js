@@ -313,7 +313,7 @@ async function onRegister(event) {
 
   setBusy(form, true);
   try {
-    const result = await api(`/auth/v1/signup?redirect_to=${encodeURIComponent(RETURN_URL)}`, {
+    const result = await api(`/auth/v1/signup?redirect_to=${encodeURIComponent(returnUrl())}`, {
       method: "POST",
       body: { email: v.email, password: v.password, data: { full_name: v.full_name, organization: v.organization, member_type: v.member_type } }
     });
@@ -356,7 +356,7 @@ async function onForgot(event) {
   if (!/^\S+@\S+\.\S+$/.test(v.email)) return showMsg(form, "Please enter a valid email.");
   setBusy(form, true);
   try {
-    await api(`/auth/v1/recover?redirect_to=${encodeURIComponent(RETURN_URL)}`, { method: "POST", body: { email: v.email } });
+    await api(`/auth/v1/recover?redirect_to=${encodeURIComponent(returnUrl())}`, { method: "POST", body: { email: v.email } });
     renderForgot(`If ${v.email} has an account, a reset link is on its way. It works once and expires after a while.`);
   } catch (error) {
     setBusy(form, false);
@@ -545,13 +545,19 @@ function buildNav(toc, unlocked) {
 // ------------------------------------------------------------------ paid checkout
 
 const BUY_KEY = "watchtok-results-buy";
+// Soft launch: ?buy=1 turns the buy box on. Remembered in this browser (not just this tab)
+// so the confirm-email and reset links, which open a new tab, keep it.
 function checkoutOn() {
   if (CHECKOUT_LIVE) return true;
   const q = new URLSearchParams(location.search);
   try {
-    if (q.get("buy") === "1") sessionStorage.setItem(BUY_KEY, "1");
-    return sessionStorage.getItem(BUY_KEY) === "1";
+    if (q.get("buy") === "1") localStorage.setItem(BUY_KEY, "1");
+    return localStorage.getItem(BUY_KEY) === "1" || sessionStorage.getItem(BUY_KEY) === "1";
   } catch { return q.get("buy") === "1"; }
+}
+// Where confirm and reset emails send people back to; carries ?buy=1 during the soft launch.
+function returnUrl() {
+  return !CHECKOUT_LIVE && checkoutOn() ? `${RETURN_URL}?buy=1` : RETURN_URL;
 }
 
 // TikTok, Instagram and Facebook open links in their own browsers, where sign-in links and
