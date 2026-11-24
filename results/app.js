@@ -181,7 +181,7 @@ function renderGate(mode = "register", notice = "", kind = "ok") {
           <label>Password <span class="hint">At least 10 characters</span><input name="password" type="password" autocomplete="new-password" minlength="10" required /></label>
           <label>Brand or organization <span class="hint">Optional</span><input name="organization" autocomplete="organization" maxlength="160" /></label>
           <label>I am a…<select name="member_type" required>${memberTypeOptions()}</select></label>
-          <label>Collaborator passcode <span class="hint">Only if you were given one</span><input name="passcode" autocomplete="off" autocapitalize="characters" spellcheck="false" /></label>
+          <label>Access passcode <span class="hint">Only if we gave you one. Discount codes go in the buy box after you sign in.</span><input name="passcode" autocomplete="off" autocapitalize="characters" spellcheck="false" /></label>
           <button class="gate-btn" type="submit">Create account</button>
         </form>` : `
         <form class="gate-form" id="signin-form" novalidate>
@@ -258,7 +258,7 @@ function renderProfileForm(notice = "") {
           <label>Full name<input name="full_name" autocomplete="name" required maxlength="120" value="${esc(meta.full_name)}" /></label>
           <label>Brand or organization <span class="hint">Optional</span><input name="organization" maxlength="160" value="${esc(meta.organization)}" /></label>
           <label>I am a…<select name="member_type" required>${memberTypeOptions(meta.member_type || "")}</select></label>
-          <label>Collaborator passcode <span class="hint">Only if you were given one</span><input name="passcode" autocomplete="off" spellcheck="false" /></label>
+          <label>Access passcode <span class="hint">Only if we gave you one. Discount codes go in the buy box after you sign in.</span><input name="passcode" autocomplete="off" spellcheck="false" /></label>
           <button class="gate-btn" type="submit">Continue</button>
           <button class="gate-btn secondary" type="button" id="profile-signout">Sign out</button>
         </form>
@@ -320,12 +320,12 @@ async function onRegister(event) {
     if (!result?.access_token) {
       setBusy(form, false);
       const pc = v.passcode ? " If you have a collaborator passcode, you'll enter it after confirming." : "";
-      renderGate("signin", `Almost there. We sent a confirmation link to ${v.email}. Click it to open the results. Not in your inbox? Check your Updates or Spam folder.${pc}`);
+      renderGate("signin", `Almost there. We sent a confirmation link to ${v.email}. Click it to open the results. Not in your inbox? Check your Updates or Spam folder. Already have an account with this email? Then no new email is sent: sign in below, or use "Forgot your password?".${pc}`);
       return;
     }
     saveSession(result);
     const reg = await register(v);
-    await enter(reg?.passcode && !reg.passcode.ok ? `${reg.passcode.message} You can try another passcode below.` : "");
+    await enter(reg?.passcode && !reg.passcode.ok ? `${reg.passcode.message} ${checkoutOn() ? `Email ${SUPPORT_EMAIL} and we'll sort it out.` : "You can try another passcode below."}` : "");
   } catch (error) {
     setBusy(form, false);
     showMsg(form, friendlyError(error));
@@ -586,7 +586,7 @@ function buyBlock(email) {
         <p class="code-note" id="code-note" aria-live="polite">No code: you'll pay $1,299 + applicable tax.</p>
         <label class="check-row">
           <input type="checkbox" name="terms" value="yes" />
-          <span>I agree to the <a href="../terms.html" target="_blank" rel="noopener">Terms of Sale &amp; License</a> for myself or, if I named a brand above, on behalf of that brand. I ask for access to start right away, and I understand that once it starts I can't cancel or get a refund.</span>
+          <span>I agree to the <a href="../terms.html" target="_blank" rel="noopener">Terms of Sale &amp; License</a> for myself or, if I named a brand above, on behalf of that brand. I ask for access to start right away, and I understand that once it starts I can't cancel for a change of mind; refunds work as described in section 7 of the Terms.</span>
         </label>
         <button class="gate-btn access-btn" type="submit">Continue to secure checkout</button>
         <p class="gate-fine">Payment is handled by Link, Stripe's checkout service; your card statement will show LINK.COM* WATCHTOK SUR. You'll be buying as <strong>${esc(email)}</strong>; the receipt goes there.</p>
@@ -725,13 +725,13 @@ function lockedPanel(toc, unlocked, request) {
             <p class="gate-fine">One tap. We'll contact you at <strong>${esc(email)}</strong>, no forms.</p>`}
           </div>`}
           <p class="gate-fine">Questions: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
-          <details class="passcode-details">
-            <summary>${checkoutOn() ? "Partner or Founding Member? Enter your access code" : "Have a collaborator passcode?"}</summary>
+          ${checkoutOn() ? "" : `<details class="passcode-details">
+            <summary>Have a collaborator passcode?</summary>
             <form class="gate-form" id="redeem-form" novalidate>
               <label>Access code<input name="passcode" autocomplete="off" spellcheck="false" /></label>
               <button class="gate-btn secondary" type="submit">Use access code</button>
             </form>
-          </details>
+          </details>`}
         </div>
       </div>
     </section>`;
@@ -786,7 +786,7 @@ async function renderReport(notice = "") {
       redeem.closest("details").open = true;
       showMsg(redeem, notice);
     }
-  }
+  } else if (notice && buy) showMsg(buy, notice);
 
   // Draw charts: the chart code comes from the private bundles, drawn with the public library.
   const chartCode = [sample.charts, full?.charts].filter(Boolean).map((c) => withAssets(c, urls)).join("\n");
@@ -861,6 +861,9 @@ async function handleAuthRedirect() {
   checkoutOn(); // remember ?buy=1 for this tab before any redirect cleans the address
   if (await handleAuthRedirect()) return;
   const session = await validSession();
-  if (session) await enter();
-  else renderGate("register");
+  if (session) return enter();
+  const q = new URLSearchParams(location.search);
+  if (q.has("checkout")) return renderGate("signin", "Sign in with the email you used at checkout to open your report.");
+  if (q.get("buy") === "1") return renderGate("signin", "Already registered? Sign in below. New here? Choose Create account.");
+  renderGate("register");
 })();
