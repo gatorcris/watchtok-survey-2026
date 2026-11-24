@@ -42,11 +42,11 @@ async function ensurePrice(): Promise<string> {
 }
 
 async function ensureCoupon(cents: number): Promise<string> {
-  const id = `code-off-${cents}`;
+  const id = `fm-off-${cents}`;
   const got = await stripe("GET", `coupons/${id}`);
   if (got.ok) return id;
   const made = await stripe("POST", "coupons", {
-    id, amount_off: cents, currency: "usd", duration: "once", name: "Partner code",
+    id, amount_off: cents, currency: "usd", duration: "once", name: "Founding Member code",
   });
   if (!made.ok) throw new Error(JSON.stringify(made.json));
   return id;
