@@ -346,6 +346,16 @@ function renderClosed() {
         <p class="eyebrow">Independent, creator-led research</p>
         <h1>The 2026 WatchTok survey is closed.</h1>
         <p class="lede">Thank you to everyone who took part. The 2027 survey is being planned.</p>
+        <aside class="brand-cta" aria-labelledby="brand-cta-title">
+          <p class="brand-cta-kicker">Run a watch brand?</p>
+          <h2 id="brand-cta-title">The 2026 WatchTok Report is out.</h2>
+          <ul class="brand-cta-list">
+            <li>What WatchTok is, and why it's a community, not an ad channel</li>
+            <li>What they buy: the core alone buys about 155,000 watches a year</li>
+            <li>A step-by-step playbook for reaching them, from first post to weekly scorecard</li>
+          </ul>
+          <a class="brand-cta-btn" href="results/?ref=home">See the free preview <span aria-hidden="true">→</span></a>
+        </aside>
         <div class="notice"><strong>Independent research.</strong> No watch brand has sponsored, commissioned, reviewed, or approved this survey.</div>
         ${formMarkup}
         <p class="privacy-copy">To request deletion of your email, contact ${escapeHtml(SUPPORT_EMAIL)}. See our <a href="privacy.html">Privacy Statement</a>.</p>
