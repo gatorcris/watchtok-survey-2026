@@ -3,9 +3,9 @@
 // Deployed with JWT verification ON (only signed-in users can call it).
 import { db, SB_URL, stripe } from "../_shared/util.ts";
 
-const TERMS_VERSION = "2026-11-21"; // must match src/config.js and terms.html
+const TERMS_VERSION = "2026-11-25"; // must match src/config.js and terms.html
 // Older versions still accepted for pages loaded before an update.
-const ACCEPTED_TERMS = [TERMS_VERSION, "2026-11-18"];
+const ACCEPTED_TERMS = [TERMS_VERSION, "2026-11-21"];
 const PRICE_CENTS = 129900;
 const LOOKUP_KEY = "watchtok-2026-report-1299";
 const TAX_CODE = "txcd_10701410";
@@ -97,6 +97,22 @@ Deno.serve(async (req) => {
         );
         if (held.length) return reply(400, { error: "code_in_use" });
       }
+    }
+
+    // One open checkout per buyer: close any earlier one, and stop if it was already paid
+    // (the payment message can arrive a little after the buyer returns from Stripe).
+    const recent = new Date(Date.now() - 35 * 60 * 1000).toISOString();
+    const mine = await db(
+      `results_orders?user_id=eq.${user.id}&status=eq.pending&stripe_session_id=not.is.null&created_at=gt.${recent}&select=id,stripe_session_id`,
+    );
+    for (const p of mine) {
+      const s = await stripe("GET", `checkout/sessions/${p.stripe_session_id}`);
+      if (s.ok && s.json.status === "complete") return reply(409, { error: "payment_processing" });
+      if (s.ok && s.json.status === "open") {
+        const ex = await stripe("POST", `checkout/sessions/${p.stripe_session_id}/expire`);
+        if (!ex.ok) return reply(409, { error: "payment_processing" });
+      }
+      await db(`results_orders?id=eq.${p.id}&status=eq.pending`, { method: "PATCH", body: JSON.stringify({ status: "expired" }) });
     }
 
     const [order] = await db("results_orders", {

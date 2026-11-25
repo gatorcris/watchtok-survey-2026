@@ -71,6 +71,11 @@
   background: none; border: 1px solid rgba(255,255,255,.25); color: #F4EFE3; border-radius: 6px;
   padding: 4px 10px; cursor: pointer; font: inherit;
 }
+.account-bar .bar-buy {
+  padding: 5px 12px; border-radius: 999px; background: #B8860B; color: #111827;
+  font-weight: 800; text-decoration: none; white-space: nowrap;
+}
+.account-bar .bar-buy:hover { background: #D4A53A; }
 
 nav.top a.locked { color: #6B7A8F; }
 nav.top a.locked::after { content: " 🔒"; font-size: .7rem; }
