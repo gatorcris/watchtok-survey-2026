@@ -153,10 +153,14 @@ function showMsg(form, text, kind = "error") {
   if (!el) {
     el = document.createElement("p");
     el.setAttribute("role", "status");
-    form.prepend(el);
+    // On the tall buy form, show messages right above the button so they're seen on phones.
+    const btn = form.id === "buy-form" ? form.querySelector('button[type="submit"]') : null;
+    if (btn) btn.before(el); else form.prepend(el);
   }
   el.className = `gate-msg ${kind}`;
   el.textContent = text;
+  const r = el.getBoundingClientRect();
+  if (r.top < 0 || r.bottom > window.innerHeight) el.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
 function renderGate(mode = "register", notice = "", kind = "ok") {
@@ -274,7 +278,8 @@ function renderAccountBar() {
   const m = current.member;
   const label = m.tier === "sample" ? "Preview access" : m.tier === "admin" ? "Admin"
     : m.accessUntil ? `Full access through ${accessDay(m.accessUntil)}` : "Full access";
-  bar.innerHTML = `<span>${esc(m.full_name)} · ${esc(m.email)}</span><span class="tier-pill">${label}</span><button type="button" id="signout-btn">Sign out</button>`;
+  const buyLink = m.tier === "sample" && checkoutOn() ? `<a class="bar-buy" href="#locked">Get full access · $1,299</a>` : "";
+  bar.innerHTML = `<span>${esc(m.full_name)} · ${esc(m.email)}</span><span class="tier-pill">${label}</span>${buyLink}<button type="button" id="signout-btn">Sign out</button>`;
   bar.hidden = false;
   bar.querySelector("#signout-btn").addEventListener("click", signOut);
 }
@@ -571,9 +576,9 @@ function buyBlock(email) {
     <div class="buy-box">
       <p class="price-line"><span class="price">$1,299</span> <span class="price-note">+ applicable tax · one-time payment</span></p>
       <ul class="buy-facts">
-        <li>12 months of full online access, starting right away</li>
-        <li>No subscription and no automatic renewal</li>
-        <li>For a brand: up to 3 people at your company, each with their own sign-in</li>
+        <li>12-month membership: full access starting right away, including new findings we add during that time</li>
+        <li>No automatic renewal: you renew only if you choose to</li>
+        <li>For a brand: you plus 2 colleagues on your company email domain, each with their own sign-in. They register free; after purchase, reply to your welcome email with their addresses</li>
       </ul>
       ${inAppBrowser() ? `<p class="gate-msg warn" role="note">You're in an in-app browser. For a smooth checkout, tap <strong>•••</strong> and choose <strong>Open in browser</strong> first.</p>` : ""}
       <form class="gate-form buy-form" id="buy-form" novalidate>
@@ -601,7 +606,8 @@ const BUY_ERRORS = {
   code_in_use: "That code is being used in another checkout right now. Try again in 30 minutes, or leave it empty.",
   already_has_access: "You already have full access. Reload the page to see the full report.",
   sign_in: "Please sign in again, then try once more.",
-  register: "Please finish your profile first."
+  register: "Please finish your profile first.",
+  payment_processing: "Your earlier payment went through and is still being processed. Please don't pay again: reload this page in a minute and your full report will open."
 };
 
 // Shows, before checkout, whether the code was recognized and what the buyer will pay.
@@ -680,8 +686,11 @@ async function afterCheckout() {
     }
     await new Promise((r) => setTimeout(r, 2000));
   }
-  return `Your payment went through, but unlocking is taking longer than usual. Reload in a minute; if it's still locked, email ${SUPPORT_EMAIL} and we'll fix it right away.`;
+  app.innerHTML = `<div class="gate-shell"><section class="gate-card">${brandBlock()}<h1>Payment received</h1><p class="gate-loading">We're still unlocking your full report. This usually takes less than a minute. Please don't pay again.</p><p class="gate-fine"><button class="gate-btn" id="reload-btn" type="button">Reload</button></p><p class="gate-fine">Still locked after a few minutes? Email ${esc(SUPPORT_EMAIL)} and we'll fix it right away. Your receipt from Link is on its way.</p></section></div>`;
+  app.querySelector("#reload-btn").addEventListener("click", () => location.reload());
+  return STOP;
 }
+const STOP = Symbol("stop");
 
 // Reader watermark: the signed-in email, faint and repeated, on full-report pages.
 function addWatermark(email) {
@@ -777,7 +786,8 @@ async function renderReport(notice = "") {
   if (hasFull && full) addWatermark(current.member.email);
   if (hasFull) app.querySelectorAll('[data-request="consulting"]').forEach((a) => a.addEventListener("click", onRequestConsulting));
   const buy = app.querySelector("#buy-form");
-  if (buy && current.buyNotice) showMsg(buy, current.buyNotice, /canceled/.test(current.buyNotice) ? "ok" : "error");
+  const backFromStripe = Boolean(buy && current.buyNotice);
+  if (backFromStripe) showMsg(buy, current.buyNotice, /canceled/.test(current.buyNotice) ? "ok" : "error");
   current.buyNotice = "";
   const redeem = app.querySelector("#redeem-form");
   if (redeem) {
@@ -801,12 +811,14 @@ async function renderReport(notice = "") {
   // The report's nav highlighter can nudge the page on first paint; start at the top unless a section was linked.
   let target = null;
   try { target = location.hash && location.hash !== "#" ? document.querySelector(location.hash) : null; } catch { /* not a section link */ }
-  setTimeout(() => (target ? target.scrollIntoView() : window.scrollTo(0, 0)), 150);
+  if (backFromStripe) target = buy.querySelector(".gate-msg");
+  setTimeout(() => (target ? target.scrollIntoView({ block: backFromStripe ? "center" : "start" }) : window.scrollTo(0, 0)), 150);
 }
 
 async function enter(notice = "") {
   try {
     current.buyNotice = await afterCheckout();
+    if (current.buyNotice === STOP) { current.buyNotice = ""; return; }
     const member = await loadMember();
     if (!member) return renderProfileForm(notice);
     await renderReport(notice);
