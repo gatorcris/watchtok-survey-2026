@@ -576,8 +576,8 @@ function buyBlock(email) {
     <div class="buy-box">
       <p class="price-line"><span class="price">$1,299</span> <span class="price-note">+ applicable tax · one-time payment</span></p>
       <ul class="buy-facts">
-        <li>12 months of full online access, starting right away</li>
-        <li>No subscription and no automatic renewal</li>
+        <li>12-month membership: full access starting right away, including new findings we add during that time</li>
+        <li>No automatic renewal: you renew only if you choose to</li>
         <li>For a brand: you plus 2 colleagues on your company email domain, each with their own sign-in. They register free; after purchase, reply to your welcome email with their addresses</li>
       </ul>
       ${inAppBrowser() ? `<p class="gate-msg warn" role="note">You're in an in-app browser. For a smooth checkout, tap <strong>•••</strong> and choose <strong>Open in browser</strong> first.</p>` : ""}
