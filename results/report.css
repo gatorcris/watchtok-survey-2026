@@ -742,7 +742,7 @@
   .f30-end p{color:var(--ink); font-weight:600;}
 
 
-  .score{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin:14px 0 6px;}
+  .score{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:14px 0 6px;}
   @media (max-width:900px){ .score{grid-template-columns:1fr 1fr;} }
   .score div{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
   .score b{display:block; font-family:'Fraunces',serif; font-size:1.05rem; color:var(--ink); margin-bottom:4px;}
