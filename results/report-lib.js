@@ -568,4 +568,37 @@ try{
   fromHash();
 }catch(e){} })();
 
+
+// Field Notes UI: open and close the pop-up notes (interaction only, no survey data)
+(function(){
+  if (window.__fnBound) return; window.__fnBound = true;
+  function closeAll(){
+    document.querySelectorAll('.fn-pop.fn-show').forEach(function(p){ p.classList.remove('fn-show'); });
+    document.querySelectorAll('.fn-hit').forEach(function(h){ h.classList.remove('fn-gone'); h.setAttribute('aria-expanded','false'); });
+    document.querySelectorAll('.fn-host.fn-open').forEach(function(b){ b.classList.remove('fn-open'); });
+  }
+  function hitFor(el){ var host = el.closest('.fn-host'); return host ? host.querySelector('.fn-hit') : null; }
+  function openIt(h){
+    closeAll();
+    var pop = document.getElementById(h.getAttribute('aria-controls')); if (!pop) return;
+    h.classList.add('fn-gone'); h.setAttribute('aria-expanded','true');
+    pop.classList.add('fn-show');
+    var host = h.closest('.fn-host'); if (host) host.classList.add('fn-open');
+    var x = pop.querySelector('.fn-x'); if (x) setTimeout(function(){ x.focus({preventScroll:true}); }, 60);
+  }
+  document.addEventListener('click', function(e){
+    var h = e.target.closest('.fn-hit'); if (h){ e.preventDefault(); openIt(h); return; }
+    var x = e.target.closest('.fn-x'); if (x){ var hit = hitFor(x); closeAll(); if (hit) hit.focus({preventScroll:true}); return; }
+    if (e.target.closest('.fn-pop')) return;
+    closeAll();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){ closeAll(); return; }
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var t = e.target; if (!t.classList) return;
+    if (t.classList.contains('fn-hit')){ e.preventDefault(); openIt(t); }
+    else if (t.classList.contains('fn-x')){ e.preventDefault(); var hit = hitFor(t); closeAll(); if (hit) hit.focus({preventScroll:true}); }
+  });
+})();
+
 };
