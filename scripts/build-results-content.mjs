@@ -23,7 +23,7 @@ export const SAMPLE_SECTIONS = ["market", "personas"];
 // Interaction-only scripts (no survey data) that run after the report is drawn.
 // They go into the public library with the nav/tab code.
 const UI_SCRIPT = /toggle-btn|navToggle/;
-const EXTRA_UI_SCRIPTS = /Scroll-in animations|querySelectorAll\('\.cs-card'\)/;
+const EXTRA_UI_SCRIPTS = /Scroll-in animations|querySelectorAll\('\.cs-card'\)|Field Notes UI/;
 // A chart call, optionally guarded with "document.getElementById('x') && ".
 const CHART_CALL = /(?:document\.getElementById\('[^']+'\)\s*&&\s*)?WTCharts\.\w+\(document\.getElementById\('([^']+)'\),[\s\S]*?\n\}\);/g;
 
